@@ -1,0 +1,13 @@
+HTTP/1.1 400 Bad Request
+X-Powered-By: Express
+Access-Control-Allow-Origin: http://localhost:3000
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Content-Type: application/json; charset=utf-8
+Content-Length: 164
+ETag: W/"a4-v22/YrBanGwKaFebYT2wR6PpMPw"
+Date: Thu, 11 Dec 2025 18:08:33 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"message":["fullName should not be empty","email must be an email","password must be longer than or equal to 6 characters"],"error":"Bad Request","statusCode":400}

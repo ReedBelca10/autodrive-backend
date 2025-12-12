@@ -1,0 +1,7 @@
+
+user : autodrive_db_admin
+MDP : 8sJtXfonCutDKTdI
+
+mongodb+srv://autodrive_db_admin:8sJtXfonCutDKTdI@autodrive.tsswsxp.mongodb.net/?appName=AutoDrive
+
+supabase : glsfgtdznvrxwmuwcgno
