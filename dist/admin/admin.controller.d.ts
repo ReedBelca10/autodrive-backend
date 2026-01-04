@@ -1,15 +1,20 @@
-import { AdminService } from './admin.service';
-import { AdminLoginDto } from './dtos/admin-login.dto';
+import { JwtService } from '@nestjs/jwt';
+import { Model } from 'mongoose';
 export declare class AdminController {
-    private adminService;
-    constructor(adminService: AdminService);
-    login(loginDto: AdminLoginDto): Promise<{
+    private jwtService;
+    private userModel;
+    constructor(jwtService: JwtService, userModel: Model<any>);
+    login(body: {
+        email: string;
+        password: string;
+    }): Promise<{
+        message: string;
         token: string;
-        admin: {
-            id: any;
+        user: {
+            _id: any;
             email: any;
+            fullName: any;
+            role: any;
         };
-    } | {
-        error: any;
     }>;
 }

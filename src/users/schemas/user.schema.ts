@@ -14,6 +14,12 @@ export class User {
   @Prop({ required: true })
   password: string;
 
+  @Prop({ default: '' })
+  phone?: string;
+
+  @Prop({ default: '' })
+  address?: string;
+
   @Prop()
   role?: string;
 
@@ -22,8 +28,12 @@ export class User {
 
   @Prop()
   avatarUrl?: string;
+  
   @Prop()
   avatarPath?: string;
+
+  @Prop({ default: true })
+  isActive?: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

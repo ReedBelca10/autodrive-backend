@@ -10,6 +10,7 @@ export class AdminDashboardController {
     @InjectModel('User') private userModel: Model<any>,
     @InjectModel('Vehicle') private vehicleModel: Model<any>,
     @InjectModel('Reservation') private reservationModel: Model<any>,
+    @InjectModel('Agency') private agencyModel: Model<any>,
   ) {}
 
   @Get('stats')

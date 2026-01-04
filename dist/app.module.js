@@ -16,6 +16,7 @@ const contact_module_1 = require("./contact/contact.module");
 const admin_module_1 = require("./admin/admin.module");
 const vehicles_module_1 = require("./vehicles/vehicles.module");
 const reservations_module_1 = require("./reservations/reservations.module");
+const agencies_module_1 = require("./agencies/agencies.module");
 dotenv.config();
 let AppModule = class AppModule {
 };
@@ -30,6 +31,7 @@ exports.AppModule = AppModule = __decorate([
             admin_module_1.AdminModule,
             vehicles_module_1.VehiclesModule,
             reservations_module_1.ReservationsModule,
+            agencies_module_1.AgenciesModule,
         ],
     })
 ], AppModule);

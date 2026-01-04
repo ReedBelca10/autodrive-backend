@@ -8,6 +8,7 @@ import { AdminDashboardController } from './admin.dashboard.controller';
 import { UserSchema } from '../users/user.schema';
 import { VehicleSchema } from '../vehicles/schemas/vehicle.schema';
 import { ReservationSchema } from '../reservations/schemas/reservation.schema';
+import { AgencySchema } from '../agencies/schemas/agency.schema';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ReservationSchema } from '../reservations/schemas/reservation.schema';
       { name: 'User', schema: UserSchema },
       { name: 'Vehicle', schema: VehicleSchema },
       { name: 'Reservation', schema: ReservationSchema },
+      { name: 'Agency', schema: AgencySchema },
     ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'La-clé-secrète',

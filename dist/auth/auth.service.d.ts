@@ -7,10 +7,13 @@ export declare class AuthService {
     validateUser(email: string, pass: string): Promise<{
         fullName: string;
         email: string;
+        phone?: string;
+        address?: string;
         role?: string;
         refreshToken?: string;
         avatarUrl?: string;
         avatarPath?: string;
+        isActive?: boolean;
         _id: any;
         __v?: any;
         $locals: Record<string, unknown>;
@@ -37,26 +40,7 @@ export declare class AuthService {
         email: string;
         password: string;
     }): Promise<{
-        user: {
-            fullName: string;
-            email: string;
-            role?: string;
-            refreshToken?: string;
-            avatarUrl?: string;
-            avatarPath?: string;
-            _id: any;
-            __v?: any;
-            $locals: Record<string, unknown>;
-            $op: "save" | "validate" | "remove" | null;
-            $where: Record<string, unknown>;
-            baseModelName?: string;
-            collection: import("mongoose").Collection;
-            db: import("mongoose").Connection;
-            errors?: import("mongoose").Error.ValidationError;
-            id?: any;
-            isNew: boolean;
-            schema: import("mongoose").Schema;
-        };
+        user: any;
         access_token: string;
         refresh_token: string;
     }>;

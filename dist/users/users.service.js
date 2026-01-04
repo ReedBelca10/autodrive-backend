@@ -22,13 +22,44 @@ let UsersService = class UsersService {
     constructor(userModel) {
         this.userModel = userModel;
     }
+    async findAll() {
+        return this.userModel.find({ isActive: { $ne: false } }).select('-password').lean();
+    }
     async create(createUserDto) {
         const existing = await this.userModel.findOne({ email: createUserDto.email }).exec();
         if (existing)
             throw new common_1.ConflictException('Email already in use');
         const hashed = await bcrypt.hash(createUserDto.password, 10);
-        const created = new this.userModel({ ...createUserDto, password: hashed });
-        return created.save();
+        const created = new this.userModel({
+            ...createUserDto,
+            password: hashed,
+            role: createUserDto.role || 'client'
+        });
+        return (await created.save()).toObject();
+    }
+    async update(id, updateUserDto) {
+        const updateData = {};
+        Object.keys(updateUserDto).forEach(key => {
+            updateData[key] = updateUserDto[key] !== undefined ? updateUserDto[key] : '';
+        });
+        const user = await this.userModel.findByIdAndUpdate(id, updateData, { new: true }).select('-password').lean();
+        if (!user)
+            throw new common_1.NotFoundException('User not found');
+        return user;
+    }
+    async delete(id) {
+        const result = await this.userModel.findByIdAndDelete(id).lean();
+        if (!result)
+            throw new common_1.NotFoundException('User not found');
+        return { message: 'User deleted successfully' };
+    }
+    async toggleStatus(id) {
+        const user = await this.userModel.findById(id).lean();
+        if (!user)
+            throw new common_1.NotFoundException('User not found');
+        const newStatus = !user.isActive;
+        const updated = await this.userModel.findByIdAndUpdate(id, { isActive: newStatus }, { new: true }).select('-password').lean();
+        return updated;
     }
     async findByEmail(email) {
         return this.userModel.findOne({ email }).exec();

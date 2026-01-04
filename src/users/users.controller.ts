@@ -1,7 +1,8 @@
-import { Controller, Get, Param, Post, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException, Res, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, Put, Delete, Patch, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException, Res, NotFoundException } from '@nestjs/common';
 import { Readable } from 'stream';
 import { UsersService } from './users.service';
 import { AuthGuard } from '@nestjs/passport';
+import { AdminGuard } from '../common/guards/admin.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
 import { supabase } from '../utils/supabase.client';
@@ -99,6 +100,36 @@ export class UsersController {
     // Do not return password
     const { password, ...rest } = user.toObject();
     return rest;
+  }
+
+  @Get()
+  @UseGuards(AdminGuard)
+  async getAllUsers() {
+    return this.usersService.findAll();
+  }
+
+  @Post()
+  @UseGuards(AdminGuard)
+  async createUser(@Body() createUserDto: any) {
+    return this.usersService.create(createUserDto);
+  }
+
+  @Put(':id')
+  @UseGuards(AdminGuard)
+  async updateUser(@Param('id') id: string, @Body() updateUserDto: any) {
+    return this.usersService.update(id, updateUserDto);
+  }
+
+  @Patch(':id/toggle-status')
+  @UseGuards(AdminGuard)
+  async toggleUserStatus(@Param('id') id: string) {
+    return this.usersService.toggleStatus(id);
+  }
+
+  @Delete(':id')
+  @UseGuards(AdminGuard)
+  async deleteUser(@Param('id') id: string) {
+    return this.usersService.delete(id);
   }
 
   @UseGuards(AuthGuard('jwt'))

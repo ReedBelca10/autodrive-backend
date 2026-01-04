@@ -7,6 +7,7 @@ import { ContactModule } from './contact/contact.module';
 import { AdminModule } from './admin/admin.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 import { ReservationsModule } from './reservations/reservations.module';
+import { AgenciesModule } from './agencies/agencies.module';
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ dotenv.config();
     AdminModule,
     VehiclesModule,
     ReservationsModule,
+    AgenciesModule,
   ],
 })
 export class AppModule {}

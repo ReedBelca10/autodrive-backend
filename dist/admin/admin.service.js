@@ -17,36 +17,39 @@ const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 let AdminService = class AdminService {
-    constructor(adminModel, jwtService) {
-        this.adminModel = adminModel;
+    constructor(userModel, jwtService) {
+        this.userModel = userModel;
         this.jwtService = jwtService;
     }
     async login(loginDto) {
-        const admin = await this.adminModel.findOne({ email: loginDto.email });
-        if (!admin) {
-            throw new Error('Admin non trouvé');
+        const user = await this.userModel.findOne({ email: loginDto.email }).select('+password');
+        if (!user) {
+            throw new common_1.NotFoundException('Utilisateur non trouvé');
         }
-        const isPasswordValid = await bcrypt.compare(loginDto.password, admin.password);
+        if (user.role !== 'admin') {
+            throw new common_1.UnauthorizedException('Accès admin requis');
+        }
+        const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
         if (!isPasswordValid) {
-            throw new Error('Mot de passe incorrect');
+            throw new common_1.UnauthorizedException('Mot de passe incorrect');
         }
         const token = this.jwtService.sign({
-            id: admin._id,
-            email: admin.email,
-            role: admin.role,
+            id: user._id.toString(),
+            email: user.email,
+            role: user.role,
         });
-        return { token, admin: { id: admin._id, email: admin.email } };
+        return { token, admin: { id: user._id, email: user.email, role: user.role } };
     }
     async validateAdmin(id) {
-        return await this.adminModel.findById(id);
+        return await this.userModel.findOne({ _id: id, role: 'admin' }).select('-password');
     }
 };
 exports.AdminService = AdminService;
 exports.AdminService = AdminService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)('Admin')),
+    __param(0, (0, mongoose_1.InjectModel)('User')),
     __metadata("design:paramtypes", [mongoose_2.Model,
         jwt_1.JwtService])
 ], AdminService);

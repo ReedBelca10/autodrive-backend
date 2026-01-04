@@ -8,13 +8,52 @@ import * as bcrypt from 'bcryptjs';
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
-  async create(createUserDto: { fullName: string; email: string; password: string }) {
+  async findAll() {
+    // Return all users except those with isActive explicitly set to false
+    return this.userModel.find({ isActive: { $ne: false } }).select('-password').lean();
+  }
+
+  async create(createUserDto: { fullName: string; email: string; password: string; phone?: string; address?: string; role?: string }) {
     const existing = await this.userModel.findOne({ email: createUserDto.email }).exec();
     if (existing) throw new ConflictException('Email already in use');
 
     const hashed = await bcrypt.hash(createUserDto.password, 10);
-    const created = new this.userModel({ ...createUserDto, password: hashed });
-    return created.save();
+    const created = new this.userModel({ 
+      ...createUserDto, 
+      password: hashed,
+      role: createUserDto.role || 'client'
+    });
+    return (await created.save()).toObject();
+  }
+
+  async update(id: string, updateUserDto: any) {
+    // Filter out undefined/null values and ensure all fields are saved
+    const updateData: any = {};
+    
+    Object.keys(updateUserDto).forEach(key => {
+      // Always set the value, even if empty string, to ensure fields are added for existing users
+      updateData[key] = updateUserDto[key] !== undefined ? updateUserDto[key] : '';
+    });
+
+    const user = await this.userModel.findByIdAndUpdate(id, updateData, { new: true }).select('-password').lean();
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  async delete(id: string) {
+    // Hard delete - remove completely from database
+    const result = await this.userModel.findByIdAndDelete(id).lean();
+    if (!result) throw new NotFoundException('User not found');
+    return { message: 'User deleted successfully' };
+  }
+
+  async toggleStatus(id: string) {
+    const user = await this.userModel.findById(id).lean();
+    if (!user) throw new NotFoundException('User not found');
+    
+    const newStatus = !user.isActive;
+    const updated = await this.userModel.findByIdAndUpdate(id, { isActive: newStatus }, { new: true }).select('-password').lean();
+    return updated;
   }
 
   async findByEmail(email: string) {

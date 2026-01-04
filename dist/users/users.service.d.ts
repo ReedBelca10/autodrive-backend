@@ -3,11 +3,26 @@ import { User, UserDocument } from './schemas/user.schema';
 export declare class UsersService {
     private userModel;
     constructor(userModel: Model<UserDocument>);
+    findAll(): Promise<(import("mongoose").FlattenMaps<UserDocument> & {
+        _id: import("mongoose").Types.ObjectId;
+    })[]>;
     create(createUserDto: {
         fullName: string;
         email: string;
         password: string;
-    }): Promise<import("mongoose").Document<unknown, {}, UserDocument> & User & import("mongoose").Document<any, any, any> & {
+        phone?: string;
+        address?: string;
+        role?: string;
+    }): Promise<User & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    update(id: string, updateUserDto: any): Promise<import("mongoose").FlattenMaps<UserDocument> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    delete(id: string): Promise<{
+        message: string;
+    }>;
+    toggleStatus(id: string): Promise<import("mongoose").FlattenMaps<UserDocument> & {
         _id: import("mongoose").Types.ObjectId;
     }>;
     findByEmail(email: string): Promise<import("mongoose").Document<unknown, {}, UserDocument> & User & import("mongoose").Document<any, any, any> & {

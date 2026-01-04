@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const stream_1 = require("stream");
 const users_service_1 = require("./users.service");
 const passport_1 = require("@nestjs/passport");
+const admin_guard_1 = require("../common/guards/admin.guard");
 const platform_express_1 = require("@nestjs/platform-express");
 const multer = require("multer");
 const supabase_client_1 = require("../utils/supabase.client");
@@ -106,6 +107,21 @@ let UsersController = class UsersController {
         const user = await this.usersService.findById(id);
         const { password, ...rest } = user.toObject();
         return rest;
+    }
+    async getAllUsers() {
+        return this.usersService.findAll();
+    }
+    async createUser(createUserDto) {
+        return this.usersService.create(createUserDto);
+    }
+    async updateUser(id, updateUserDto) {
+        return this.usersService.update(id, updateUserDto);
+    }
+    async toggleUserStatus(id) {
+        return this.usersService.toggleStatus(id);
+    }
+    async deleteUser(id) {
+        return this.usersService.delete(id);
     }
     async uploadAvatar(req, file) {
         if (!file) {
@@ -213,6 +229,46 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getUser", null);
+__decorate([
+    (0, common_1.Get)(),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getAllUsers", null);
+__decorate([
+    (0, common_1.Post)(),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "createUser", null);
+__decorate([
+    (0, common_1.Put)(':id'),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "updateUser", null);
+__decorate([
+    Patch(':id/toggle-status'),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "toggleUserStatus", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "deleteUser", null);
 __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
     (0, common_1.Post)('avatar'),

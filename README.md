@@ -1,6 +1,67 @@
 # AutoDrive-Backend
 Le backend NestJS du projet AutoDrive (application web de location de véhicule).
 
+## Authentification et Rôles Utilisateur
+
+### Système de rôles
+Le système supporte 3 rôles utilisateur :
+- **admin** : Accès au dashboard administrateur (`/admin`)
+- **manager** : Accès au dashboard manager (`/manager`)
+- **client** : Utilisateur standard (accueil `/`)
+
+### Flux d'authentification avec redirection automatique
+
+1. **Utilisateur se connecte** : POST `/auth/login` avec email/password
+2. **Backend génère JWT** : Token contient l'email, l'ID et le **rôle** utilisateur
+3. **Token stocké en cookie HttpOnly** : `autodrive_token` (sécurisé, inaccessible au JavaScript)
+4. **Frontend récupère le profil** : GET `/auth/profile` pour obtenir le rôle
+5. **Redirection automatique** :
+   - Admin → `/admin` (protégé par middleware + AdminGuard backend)
+   - Manager → `/manager` (protégé par middleware + ManagerGuard backend)
+   - Client → `/` (pas de protection)
+
+### Protection des routes
+
+**Frontend** : Middleware Next.js (`middleware.ts`)
+- Vérifie le rôle en appelant `/auth/profile`
+- Redirige vers `/login` si non authentifié
+- Redirige vers `/` si rôle insuffisant
+
+**Backend** : Guards NestJS
+- `AdminGuard` : Vérifie `role === 'admin'`
+- `ManagerGuard` : Vérifie `role === 'manager'` ou `'admin'`
+- Lecture du token depuis cookies HttpOnly (`request.cookies.autodrive_token`) avec fallback sur Authorization header
+
+### Endpoints clés
+
+| Endpoint | Méthode | Auth | Description |
+|----------|---------|------|-------------|
+| `/auth/login` | POST | ❌ | Se connecter |
+| `/auth/register` | POST | ❌ | S'inscrire |
+| `/auth/profile` | GET | ✅ JWT | Récupérer le profil actuel avec rôle |
+| `/auth/logout` | POST | ✅ JWT | Se déconnecter |
+| `/auth/refresh` | POST | ✅ JWT | Renouveler le token |
+| `/admin/dashboard/stats` | GET | ✅ AdminGuard | Statistiques (admin uniquement) |
+| `/admin/dashboard/users` | GET | ✅ AdminGuard | Liste des utilisateurs (admin uniquement) |
+
+### Variables d'environnement requises
+
+```env
+# JWT
+JWT_SECRET=votre_secret_jwt_tres_long_et_complexe
+
+# MongoDB
+MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/autodrive
+
+# Frontend
+FRONTEND_ORIGIN=http://localhost:3000
+
+# Supabase (optionnel, pour les avatars)
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_KEY=votre_service_key
+SUPABASE_BUCKET=avatars
+```
+
 ## Testing avatar upload (local dev)
 
 This project exposes an authenticated endpoint to upload user avatars to Supabase Storage and returns either a public URL or a signed URL. The examples below show how I tested the full flow locally (register -> profile -> upload -> profile) using PowerShell and curl.

@@ -7,10 +7,13 @@ export declare class UsersController {
     getUser(id: string): Promise<{
         fullName: string;
         email: string;
+        phone?: string;
+        address?: string;
         role?: string;
         refreshToken?: string;
         avatarUrl?: string;
         avatarPath?: string;
+        isActive?: boolean;
         _id: any;
         __v?: any;
         $locals: Record<string, unknown>;
@@ -23,6 +26,21 @@ export declare class UsersController {
         id?: any;
         isNew: boolean;
         schema: import("mongoose").Schema;
+    }>;
+    getAllUsers(): Promise<(import("mongoose").FlattenMaps<import("./schemas/user.schema").UserDocument> & {
+        _id: import("mongoose").Types.ObjectId;
+    })[]>;
+    createUser(createUserDto: any): Promise<import("./schemas/user.schema").User & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    updateUser(id: string, updateUserDto: any): Promise<import("mongoose").FlattenMaps<import("./schemas/user.schema").UserDocument> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    toggleUserStatus(id: string): Promise<import("mongoose").FlattenMaps<import("./schemas/user.schema").UserDocument> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    deleteUser(id: string): Promise<{
+        message: string;
     }>;
     uploadAvatar(req: Request, file: Express.Multer.File): Promise<any>;
 }

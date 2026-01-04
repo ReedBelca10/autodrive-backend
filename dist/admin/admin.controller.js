@@ -14,18 +14,51 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminController = void 0;
 const common_1 = require("@nestjs/common");
-const admin_service_1 = require("./admin.service");
-const admin_login_dto_1 = require("./dtos/admin-login.dto");
+const jwt_1 = require("@nestjs/jwt");
+const mongoose_1 = require("@nestjs/mongoose");
+const mongoose_2 = require("mongoose");
+const bcrypt = require("bcryptjs");
 let AdminController = class AdminController {
-    constructor(adminService) {
-        this.adminService = adminService;
+    constructor(jwtService, userModel) {
+        this.jwtService = jwtService;
+        this.userModel = userModel;
     }
-    async login(loginDto) {
+    async login(body) {
         try {
-            return await this.adminService.login(loginDto);
+            const { email, password } = body;
+            if (!email || !password) {
+                throw new common_1.BadRequestException('Email et mot de passe requis');
+            }
+            const user = await this.userModel.findOne({ email, role: 'admin' }).select('+password');
+            if (!user) {
+                throw new common_1.UnauthorizedException('Email ou mot de passe incorrect');
+            }
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+            if (!isPasswordValid) {
+                throw new common_1.UnauthorizedException('Email ou mot de passe incorrect');
+            }
+            const token = this.jwtService.sign({
+                _id: user._id,
+                email: user.email,
+                fullName: user.fullName,
+                role: user.role,
+            });
+            return {
+                message: 'Connexion réussie',
+                token,
+                user: {
+                    _id: user._id,
+                    email: user.email,
+                    fullName: user.fullName,
+                    role: user.role,
+                },
+            };
         }
-        catch (error) {
-            return { error: error.message };
+        catch (err) {
+            console.error('Erreur lors de la connexion admin:', err);
+            if (err instanceof common_1.BadRequestException || err instanceof common_1.UnauthorizedException)
+                throw err;
+            throw new common_1.UnauthorizedException('Email ou mot de passe incorrect');
         }
     }
 };
@@ -34,10 +67,12 @@ __decorate([
     (0, common_1.Post)('login'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [admin_login_dto_1.AdminLoginDto]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "login", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.Controller)('admin'),
-    __metadata("design:paramtypes", [admin_service_1.AdminService])
+    __param(1, (0, mongoose_1.InjectModel)('User')),
+    __metadata("design:paramtypes", [jwt_1.JwtService,
+        mongoose_2.Model])
 ], AdminController);
