@@ -3,6 +3,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import * as dotenv from 'dotenv';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { ContactModule } from './contact/contact.module';
+import { AdminModule } from './admin/admin.module';
+import { VehiclesModule } from './vehicles/vehicles.module';
+import { ReservationsModule } from './reservations/reservations.module';
 
 dotenv.config();
 
@@ -13,6 +17,10 @@ dotenv.config();
     }),
     UsersModule,
     AuthModule,
+    ContactModule,
+    AdminModule,
+    VehiclesModule,
+    ReservationsModule,
   ],
 })
 export class AppModule {}

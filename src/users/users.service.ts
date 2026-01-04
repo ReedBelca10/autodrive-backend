@@ -49,4 +49,27 @@ export class UsersService {
   async setAvatarPath(userId: string, path: string) {
     await this.userModel.findByIdAndUpdate(userId, { avatarPath: path }).exec();
   }
+
+  async findOrCreateFromSocial(profile: { email?: string; fullName?: string; avatarUrl?: string }) {
+    if (!profile || !profile.email) throw new Error('Social profile missing email');
+    let user = await this.userModel.findOne({ email: profile.email }).exec();
+    if (user) {
+      // update avatar/fullName if missing
+      const update: any = {};
+      if (profile.fullName && (!user.fullName || user.fullName !== profile.fullName)) update.fullName = profile.fullName;
+      if (profile.avatarUrl && (!user.avatarUrl || user.avatarUrl !== profile.avatarUrl)) update.avatarUrl = profile.avatarUrl;
+      if (Object.keys(update).length) await this.userModel.findByIdAndUpdate(user._id, update).exec();
+      return this.userModel.findById(user._id).exec();
+    }
+
+    // create a user without password (social-only)
+    const created = new this.userModel({
+      email: profile.email,
+      fullName: profile.fullName || profile.email.split('@')[0],
+      avatarUrl: profile.avatarUrl,
+      // mark as social account
+      role: 'user',
+    });
+    return created.save();
+  }
 }
