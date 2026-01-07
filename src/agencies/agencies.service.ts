@@ -29,15 +29,15 @@ export class AgenciesService {
 
   async delete(id: string) {
     const result = await this.agencyModel.findByIdAndDelete(id).lean();
-    if (!result) throw new Error('Agency not found');
-    return { message: 'Agency deleted successfully' };
+    if (!result) throw new Error('Agence non trouvée');
+    return { message: 'Agence supprimée avec succès' };
   }
 
   async toggleStatus(id: string) {
-    const agency = await this.agencyModel.findById(id).lean();
-    if (!agency) throw new Error('Agency not found');
+    const agency = await this.agencyModel.findById(id) as any;
+    if (!agency) throw new Error('Agence non trouvée');
     
-    const newStatus = !agency.isActive;
+    const newStatus = !(agency.isActive || false);
     const updated = await this.agencyModel.findByIdAndUpdate(id, { isActive: newStatus }, { new: true }).populate('managerId', 'fullName email').lean();
     return updated;
   }

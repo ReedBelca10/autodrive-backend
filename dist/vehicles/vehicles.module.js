@@ -9,18 +9,25 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VehiclesModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
+const jwt_1 = require("@nestjs/jwt");
 const vehicles_service_1 = require("./vehicles.service");
 const vehicles_controller_1 = require("./vehicles.controller");
+const vehicles_upload_service_1 = require("./vehicles-upload.service");
 const vehicle_schema_1 = require("./schemas/vehicle.schema");
+const agency_schema_1 = require("../agencies/schemas/agency.schema");
 let VehiclesModule = class VehiclesModule {
 };
 exports.VehiclesModule = VehiclesModule;
 exports.VehiclesModule = VehiclesModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mongoose_1.MongooseModule.forFeature([{ name: 'Vehicle', schema: vehicle_schema_1.VehicleSchema }]),
+            mongoose_1.MongooseModule.forFeature([
+                { name: 'Vehicle', schema: vehicle_schema_1.VehicleSchema },
+                { name: 'Agency', schema: agency_schema_1.AgencySchema },
+            ]),
+            jwt_1.JwtModule.register({ secret: process.env.JWT_SECRET || 'secret' }),
         ],
-        providers: [vehicles_service_1.VehiclesService],
+        providers: [vehicles_service_1.VehiclesService, vehicles_upload_service_1.VehiclesUploadService],
         controllers: [vehicles_controller_1.VehiclesController],
         exports: [vehicles_service_1.VehiclesService],
     })

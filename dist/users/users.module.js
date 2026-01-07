@@ -12,6 +12,7 @@ const mongoose_1 = require("@nestjs/mongoose");
 const jwt_1 = require("@nestjs/jwt");
 const users_service_1 = require("./users.service");
 const users_controller_1 = require("./users.controller");
+const vehicle_schema_1 = require("../vehicles/schemas/vehicle.schema");
 const user_schema_1 = require("./schemas/user.schema");
 let UsersModule = class UsersModule {
 };
@@ -19,7 +20,10 @@ exports.UsersModule = UsersModule;
 exports.UsersModule = UsersModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mongoose_1.MongooseModule.forFeature([{ name: user_schema_1.User.name, schema: user_schema_1.UserSchema }]),
+            mongoose_1.MongooseModule.forFeature([
+                { name: user_schema_1.User.name, schema: user_schema_1.UserSchema },
+                { name: vehicle_schema_1.Vehicle.name, schema: vehicle_schema_1.VehicleSchema }
+            ]),
             jwt_1.JwtModule.register({
                 secret: process.env.JWT_SECRET || 'your-secret-key',
                 signOptions: { expiresIn: '24h' },

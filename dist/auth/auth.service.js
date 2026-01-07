@@ -12,14 +12,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const users_service_1 = require("../users/users.service");
+const email_service_1 = require("../common/services/email.service");
 const bcrypt = require("bcryptjs");
 const jwt_1 = require("@nestjs/jwt");
+const crypto = require("crypto");
 const ACCESS_TOKEN_EXP = '1h';
 const REFRESH_TOKEN_EXP = '7d';
 let AuthService = class AuthService {
-    constructor(usersService, jwtService) {
+    constructor(usersService, jwtService, emailService) {
         this.usersService = usersService;
         this.jwtService = jwtService;
+        this.emailService = emailService;
     }
     async validateUser(email, pass) {
         const user = await this.usersService.findByEmail(email);
@@ -56,16 +59,16 @@ let AuthService = class AuthService {
             const userId = payload.sub;
             const user = await this.usersService.findById(userId);
             if (!user || !user.refreshToken)
-                throw new common_1.ForbiddenException('Refresh token not found');
+                throw new common_1.ForbiddenException('Jeton de rafraîchissement non trouvé');
             const matches = await bcrypt.compare(refreshToken, user.refreshToken);
             if (!matches)
-                throw new common_1.ForbiddenException('Refresh token does not match');
+                throw new common_1.ForbiddenException('Le jeton de rafraîchissement ne correspond pas');
             const tokens = await this.getTokens(user);
             await this.usersService.setRefreshToken(userId, tokens.refreshToken);
             return { access_token: tokens.accessToken, refresh_token: tokens.refreshToken };
         }
         catch (err) {
-            throw new common_1.ForbiddenException('Invalid refresh token');
+            throw new common_1.ForbiddenException('Jeton de rafraîchissement invalide');
         }
     }
     async logoutRefreshToken(refreshToken) {
@@ -77,9 +80,39 @@ let AuthService = class AuthService {
         catch (err) {
         }
     }
+    async requestPasswordReset(email) {
+        const user = await this.usersService.findByEmail(email);
+        if (!user) {
+            throw new common_1.BadRequestException('Aucun compte trouvé avec cet email');
+        }
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        await this.usersService.setPasswordResetToken(user._id, hashedToken, 3600);
+        await this.emailService.sendPasswordResetEmail(user.email, user.fullName, resetToken);
+        return { message: 'Email de réinitialisation envoyé' };
+    }
+    async resetPassword(resetToken, newPassword) {
+        if (!resetToken || !newPassword) {
+            throw new common_1.BadRequestException('Token et mot de passe sont requis');
+        }
+        const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        const user = (await this.usersService.findByResetToken(hashedToken));
+        if (!user) {
+            throw new common_1.BadRequestException('Lien de réinitialisation invalide ou expiré');
+        }
+        if (!user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+            throw new common_1.BadRequestException('Lien de réinitialisation expiré');
+        }
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await this.usersService.updatePassword(user._id, hashedPassword);
+        await this.emailService.sendPasswordChangeConfirmation(user.email, user.fullName);
+        return { message: 'Mot de passe réinitialisé avec succès' };
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [users_service_1.UsersService, jwt_1.JwtService])
+    __metadata("design:paramtypes", [users_service_1.UsersService,
+        jwt_1.JwtService,
+        email_service_1.EmailService])
 ], AuthService);

@@ -31,10 +31,10 @@ class LoginDto {
 export class AuthController {
   constructor(private authService: AuthService, private jwtService: JwtService, private usersService: UsersService) {}
 
-  // In-memory PKCE storage for Twitter flow (state -> code_verifier)
+  // Stockage en mémoire PKCE pour le flux Twitter (state -> code_verifier)
   private static twitterPkce = new Map<string, string>();
 
-  // Start OAuth flow for supported providers
+  // Démarrer le flux OAuth pour les fournisseurs pris en charge
   @Get('oauth/:provider')
   async oauthStart(@Req() req: Request, @Res() res: Response) {
     const provider = (req.params as any).provider as string;
@@ -72,7 +72,7 @@ export class AuthController {
       return res.redirect(url);
     }
 
-    return res.status(400).send({ error: 'Unsupported provider' });
+    return res.status(400).send({ error: 'Fournisseur non supporté' });
   }
 
   @Get('oauth/google/callback')
@@ -115,10 +115,10 @@ export class AuthController {
         maxAge: 1000 * 60 * 60 * 24 * 7,
         path: '/',
       });
-      // redirect back to frontend
+      // rediriger vers le frontend
       return res.redirect(frontend + '/');
     } catch (e) {
-      console.warn('Google OAuth callback error', e);
+      console.warn('Erreur de rappel Google OAuth', e);
       return res.redirect((process.env.FRONTEND_ORIGIN || 'http://localhost:3000') + '/login?error=oauth');
     }
   }
@@ -156,7 +156,7 @@ export class AuthController {
       });
       return res.redirect(frontend + '/');
     } catch (e) {
-      console.warn('Facebook OAuth callback error', e);
+      console.warn('Erreur de rappel Facebook OAuth', e);
       return res.redirect((process.env.FRONTEND_ORIGIN || 'http://localhost:3000') + '/login?error=oauth');
     }
   }
@@ -171,7 +171,7 @@ export class AuthController {
       const codeVerifier = (AuthController as any).twitterPkce.get(state);
       // remove stored verifier
       (AuthController as any).twitterPkce.delete(state);
-      if (!codeVerifier) throw new Error('PKCE code_verifier not found');
+      if (!codeVerifier) throw new Error('Code_verifier PKCE non trouvé');
 
       const tokenRes = await fetch('https://api.twitter.com/2/oauth2/token', {
         method: 'POST',
@@ -186,13 +186,13 @@ export class AuthController {
       });
       const tokenJson = await tokenRes.json();
       const accessToken = tokenJson.access_token;
-      // fetch user info
+      // récupérer les infos utilisateur
       const profileRes = await fetch('https://api.twitter.com/2/users/me?user.fields=profile_image_url,name,username', {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       const profileJson = await profileRes.json();
       const userData = profileJson.data || {};
-      // Twitter may not provide email via this endpoint; use username as fallback
+      // Twitter peut ne pas fournir d'email via ce point de terminaison; utiliser le nom d'utilisateur comme alternative
       const email = (userData.username ? `${userData.username}@twitter.local` : undefined);
       const fullName = userData.name || userData.username;
       const avatarUrl = userData.profile_image_url;
@@ -244,14 +244,14 @@ export class AuthController {
       }
       return (result as any).user || result;
     } catch (err: any) {
-      throw new BadRequestException(err.message || 'Registration failed');
+      throw new BadRequestException(err.message || 'Registration a échoué');
     }
   }
 
   @Post('login')
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const user = await this.authService.validateUser(dto.email, dto.password);
-    if (!user) throw new BadRequestException('Invalid credentials');
+    if (!user) throw new BadRequestException('credentials invalide');
     const tokenObj = await this.authService.login(user);
     const access = tokenObj.access_token;
     const refresh = tokenObj.refresh_token;
@@ -279,11 +279,11 @@ export class AuthController {
     // req.user is populated by JwtStrategy validate
     const user: any = (req as any).user;
     const id = user?.userId || user?.sub || user?.id;
-    if (!id) throw new BadRequestException('User not found');
+    if (!id) throw new BadRequestException('Utilisateur non trouvé');
     // attempt to fetch full user from DB; if DB is down, return a minimal profile based on JWT
     try {
       const dbUser = await this.usersService.findById(id as string);
-      if (!dbUser) throw new NotFoundException('User not found in DB');
+      if (!dbUser) throw new NotFoundException('Utilisateur non trouvé in DB');
 
       // if avatarPath exists and we don't have avatarUrl, attempt to generate a signed url
       if (dbUser.avatarPath && !dbUser.avatarUrl && process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
@@ -365,5 +365,24 @@ export class AuthController {
       path: '/',
     });
     return { message: 'ok' };
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() body: { email: string }) {
+    if (!body.email) {
+      throw new BadRequestException('Email est requis');
+    }
+    return await this.authService.requestPasswordReset(body.email);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() body: { token: string; password: string }) {
+    if (!body.token || !body.password) {
+      throw new BadRequestException('Token et mot de passe sont requis');
+    }
+    if (body.password.length < 6) {
+      throw new BadRequestException('Le mot de passe doit contenir au moins 6 caractères');
+    }
+    return await this.authService.resetPassword(body.token, body.password);
   }
 }

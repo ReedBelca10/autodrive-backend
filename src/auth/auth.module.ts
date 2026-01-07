@@ -6,6 +6,7 @@ import { UsersModule } from '../users/users.module';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { EmailService } from '../common/services/email.service';
 
 dotenv.config();
 
@@ -18,7 +19,7 @@ dotenv.config();
       signOptions: { expiresIn: '1h' },
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, EmailService],
   controllers: [AuthController],
   exports: [AuthService],
 })

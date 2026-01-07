@@ -1,5 +1,5 @@
 import { Model } from 'mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { User, UserDocument } from './user.schema';
 export declare class UsersService {
     private userModel;
     constructor(userModel: Model<UserDocument>);
@@ -45,4 +45,25 @@ export declare class UsersService {
     }): Promise<import("mongoose").Document<unknown, {}, UserDocument> & User & import("mongoose").Document<any, any, any> & {
         _id: import("mongoose").Types.ObjectId;
     }>;
+    getFavorites(userId: string): Promise<any>;
+    addFavorite(userId: string, vehicleId: string): Promise<{
+        message: string;
+        favoriteCount: number;
+        vehicleId?: undefined;
+    } | {
+        message: string;
+        favoriteCount: number;
+        vehicleId: string;
+    }>;
+    removeFavorite(userId: string, vehicleId: string): Promise<{
+        message: string;
+        favoriteCount: any;
+        vehicleId: string;
+    }>;
+    isFavorite(userId: string, vehicleId: string): Promise<boolean>;
+    setPasswordResetToken(userId: string, token: string, expiresInSeconds: number): Promise<void>;
+    findByResetToken(token: string): Promise<import("mongoose").Document<unknown, {}, UserDocument> & User & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    updatePassword(userId: string, hashedPassword: string): Promise<void>;
 }

@@ -8,10 +8,10 @@ export class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     
-    // Try to get token from cookies first (HttpOnly cookies)
+    // Essayer d'obtenir le jeton des cookies en premier (cookies HttpOnly)
     let token = request.cookies?.autodrive_token;
     
-    // Fallback to Authorization header if no cookie
+    // Retour au header Authorization s'il n'y a pas de cookie
     if (!token) {
       token = request.headers.authorization?.replace('Bearer ', '');
     }

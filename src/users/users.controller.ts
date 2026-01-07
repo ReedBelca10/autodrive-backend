@@ -10,25 +10,25 @@ import { Request } from 'express';
 
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(private usersService: UsersService) { }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('avatar')
   async proxyAvatar(@Req() req: Request, @Res() res: any) {
     const user: any = (req as any).user;
     const userId = user?.userId || user?.sub || user?.id;
-    if (!userId) return res.status(400).send('User not found');
+    if (!userId) return res.status(400).send('Utilisateur non trouvé');
 
     // fetch user from DB to get avatarPath
     let dbUser: any;
     try {
       dbUser = await this.usersService.findById(userId as string);
     } catch (e) {
-      return res.status(404).send('User not found');
+      return res.status(404).send('Utilisateur non trouvé');
     }
 
     const avatarPath = dbUser?.avatarPath;
-    if (!avatarPath) return res.status(404).send('Avatar not set');
+    if (!avatarPath) return res.status(404).send('Avatar non défini');
 
     const bucket = process.env.SUPABASE_BUCKET || 'avatars';
 
@@ -37,40 +37,40 @@ export class UsersController {
       const expiresIn = 60; // seconds
       const { data: signedData, error: signedError } = await supabase.storage.from(bucket).createSignedUrl(avatarPath, expiresIn) as any;
       if (signedError || !signedData?.signedUrl) {
-        console.warn('[users.controller] createSignedUrl failed, falling back to public URL or download', signedError);
+        console.warn('[users.controller] createSignedUrl a échoué, retour à l\'URL publique ou au téléchargement', signedError);
         // try public url
         try {
           const { data: pub } = supabase.storage.from(bucket).getPublicUrl(avatarPath) as any;
           if (pub && pub.publicUrl) {
             const fetchRes = await fetch(pub.publicUrl);
-                if (!fetchRes.ok) return res.status(502).send('Failed to fetch avatar');
-                res.setHeader('Content-Type', fetchRes.headers.get('content-type') || 'application/octet-stream');
-                // convert web ReadableStream to Node stream if needed
-                try {
-                  const body: any = fetchRes.body;
-                  if (body && typeof body.pipe === 'function') {
-                    return body.pipe(res);
-                  }
-                  if (body && typeof Readable.fromWeb === 'function' && typeof body.getReader === 'function') {
-                    const nodeStream = Readable.fromWeb(body);
-                    return nodeStream.pipe(res);
-                  }
-                  // fallback to arrayBuffer
-                  const buf = Buffer.from(await fetchRes.arrayBuffer());
-                  return res.send(buf);
-                } catch (e) {
-                  const buf = Buffer.from(await fetchRes.arrayBuffer());
-                  return res.send(buf);
-                }
+            if (!fetchRes.ok) return res.status(502).send('Impossible de récupérer l\'avatar');
+            res.setHeader('Content-Type', fetchRes.headers.get('content-type') || 'application/octet-stream');
+            // convert web ReadableStream to Node stream if needed
+            try {
+              const body: any = fetchRes.body;
+              if (body && typeof body.pipe === 'function') {
+                return body.pipe(res);
+              }
+              if (body && typeof Readable.fromWeb === 'function' && typeof body.getReader === 'function') {
+                const nodeStream = Readable.fromWeb(body);
+                return nodeStream.pipe(res);
+              }
+              // fallback to arrayBuffer
+              const buf = Buffer.from(await fetchRes.arrayBuffer());
+              return res.send(buf);
+            } catch (e) {
+              const buf = Buffer.from(await fetchRes.arrayBuffer());
+              return res.send(buf);
+            }
           }
         } catch (e) {
-          console.warn('[users.controller] getPublicUrl fallback failed', e?.message || e);
+          console.warn('[users.controller] le secours getPublicUrl a échoué', e?.message || e);
         }
-        return res.status(502).send('Could not generate avatar URL');
+        return res.status(502).send('Impossible de générer l\'URL de l\'avatar');
       }
 
       const proxied = await fetch(signedData.signedUrl);
-      if (!proxied.ok) return res.status(502).send('Failed to fetch avatar');
+      if (!proxied.ok) return res.status(502).send('Impossible de récupérer l\'avatar');
       res.setHeader('Content-Type', proxied.headers.get('content-type') || 'application/octet-stream');
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       try {
@@ -89,9 +89,47 @@ export class UsersController {
         return res.send(buf);
       }
     } catch (e) {
-      console.error('[users.controller] proxyAvatar error', e?.message || e);
-      return res.status(500).send('Internal error');
+      console.error('[users.controller] erreur proxyAvatar', e?.message || e);
+      return res.status(500).send('Erreur serveur');
     }
+  }
+
+  // ========== FAVORIS ==========
+  @UseGuards(AuthGuard('jwt'))
+  @Get('favorites')
+  async getFavorites(@Req() req: Request) {
+    const user: any = (req as any).user;
+    const userId = user?.userId || user?.sub || user?.id;
+    if (!userId) throw new BadRequestException('Utilisateur non trouvé');
+    return await this.usersService.getFavorites(userId);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('favorites/:vehicleId')
+  async addFavorite(@Req() req: Request, @Param('vehicleId') vehicleId: string) {
+    const user: any = (req as any).user;
+    const userId = user?.userId || user?.sub || user?.id;
+    if (!userId) throw new BadRequestException('Utilisateur non trouvé');
+    return await this.usersService.addFavorite(userId, vehicleId);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete('favorites/:vehicleId')
+  async removeFavorite(@Req() req: Request, @Param('vehicleId') vehicleId: string) {
+    const user: any = (req as any).user;
+    const userId = user?.userId || user?.sub || user?.id;
+    if (!userId) throw new BadRequestException('Utilisateur non trouvé');
+    return await this.usersService.removeFavorite(userId, vehicleId);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('favorites/:vehicleId/check')
+  async isFavorite(@Req() req: Request, @Param('vehicleId') vehicleId: string) {
+    const user: any = (req as any).user;
+    const userId = user?.userId || user?.sub || user?.id;
+    if (!userId) throw new BadRequestException('Utilisateur non trouvé');
+    const isFav = await this.usersService.isFavorite(userId, vehicleId);
+    return { isFavorite: isFav };
   }
 
   @Get(':id')
@@ -134,7 +172,7 @@ export class UsersController {
 
   @UseGuards(AuthGuard('jwt'))
   @Post('avatar')
-  @UseInterceptors(FileInterceptor('file', { 
+  @UseInterceptors(FileInterceptor('file', {
     storage: multer.memoryStorage(),
     limits: {
       fileSize: 5 * 1024 * 1024, // 5MB
@@ -143,25 +181,25 @@ export class UsersController {
   async uploadAvatar(@Req() req: Request, @UploadedFile() file: Express.Multer.File) {
     // ensure file present
     if (!file) {
-      console.warn('[users.controller] uploadAvatar called without file');
-      throw new BadRequestException('No file uploaded');
+      console.warn('[users.controller] uploadAvatar appelé sans fichier');
+      throw new BadRequestException('Aucun fichier téléchargé');
     }
 
     const user: any = (req as any).user;
     const userId = user?.userId || user?.sub || user?.id;
-    if (!userId) throw new BadRequestException('User not found in request');
+    if (!userId) throw new BadRequestException('Utilisateur non trouvé dans la requête');
 
-    console.log(`[users.controller] uploadAvatar start for user=${userId}, filename=${file.originalname}, size=${file.size}`);
+    console.log(`[users.controller] uploadAvatar start pour user=${userId}, filename=${file.originalname}, size=${file.size}`);
 
     // Validate file type
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!validTypes.includes(file.mimetype)) {
-      console.warn(`[users.controller] Invalid file type: ${file.mimetype}`);
-      throw new BadRequestException('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.');
+      console.warn(`[users.controller] Type de fichier invalide: ${file.mimetype}`);
+      throw new BadRequestException('Type de fichier invalide. Seuls JPEG, PNG, WebP et GIF sont autorisés.');
     }
 
     // ensure supabase configured
-    if (!supabase) throw new BadRequestException('Supabase client not configured');
+    if (!supabase) throw new BadRequestException('Client Supabase non configuré');
 
     const bucket = process.env.SUPABASE_BUCKET || 'avatars';
     const timestamp = Date.now();
@@ -178,11 +216,11 @@ export class UsersController {
     } as any);
 
     if (error) {
-      console.error('[users.controller] Supabase upload error:', error);
-      throw new BadRequestException('Upload to storage failed: ' + error.message);
+      console.error('[users.controller] Erreur de téléchargement Supabase:', error);
+      throw new BadRequestException('Échec du téléchargement vers le stockage: ' + error.message);
     }
 
-    console.log('[users.controller] Supabase upload success:', { bucket, filename, data });
+    console.log('[users.controller] Succès du téléchargement Supabase:', { bucket, filename, data });
 
     // store object path in DB
     // fetch previous avatarPath to remove old file after successful upload
@@ -191,11 +229,11 @@ export class UsersController {
       const dbUser = await this.usersService.findById(userId);
       previousAvatarPath = (dbUser as any)?.avatarPath;
     } catch (e) {
-      console.warn('[users.controller] Could not fetch user before storing avatarPath:', e?.message || e);
+      console.warn('[users.controller] Impossible de récupérer l\'utilisateur avant de stocker avatarPath:', e?.message || e);
     }
 
     await this.usersService.setAvatarPath(userId, filename);
-    console.log(`[users.controller] Stored avatarPath=${filename} for user=${userId}`);
+    console.log(`[users.controller] avatarPath stocké=${filename} pour user=${userId}`);
 
     // If bucket is public we can return a public URL, otherwise create a signed URL
     let resultUrl: string | undefined = undefined;
@@ -205,10 +243,10 @@ export class UsersController {
       const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filename) as any;
       if (urlData && (urlData as any).publicUrl) {
         resultUrl = (urlData as any).publicUrl;
-        console.log('[users.controller] Public URL available for avatar:', resultUrl);
+        console.log('[users.controller] URL publique disponible pour l\'avatar:', resultUrl);
       }
     } catch (e) {
-      console.warn('[users.controller] getPublicUrl error or not available:', e?.message || e);
+      console.warn('[users.controller] erreur getPublicUrl ou non disponible:', e?.message || e);
     }
 
     if (!resultUrl) {
@@ -216,12 +254,12 @@ export class UsersController {
       const expiresIn = 60 * 60; // seconds
       const { data: signedData, error: signedError } = await supabase.storage.from(bucket).createSignedUrl(filename, expiresIn) as any;
       if (signedError) {
-        console.error('[users.controller] createSignedUrl error:', signedError);
+        console.error('[users.controller] erreur createSignedUrl:', signedError);
         // fallback to constructed public path
         resultUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${filename}`;
       } else {
         resultUrl = signedData?.signedUrl || `${process.env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${filename}`;
-        console.log('[users.controller] Signed URL created for avatar:', resultUrl);
+        console.log('[users.controller] URL signée créée pour l\'avatar:', resultUrl);
       }
     }
 
@@ -229,19 +267,19 @@ export class UsersController {
     // Note: Cache-busting will be handled by the frontend
     await this.usersService.setAvatarUrl(userId, resultUrl || '');
     await this.usersService.setAvatarPath(userId, filename);
-    console.log(`[users.controller] Finished uploadAvatar for user=${userId}, avatarUrl=${resultUrl}`);
+    console.log(`[users.controller] uploadAvatar terminé pour user=${userId}, avatarUrl=${resultUrl}`);
 
     // attempt to remove previous avatar file to save space (if different)
     if (previousAvatarPath && previousAvatarPath !== filename) {
       try {
         const { error: removeError } = await supabase.storage.from(bucket).remove([previousAvatarPath] as any) as any;
         if (removeError) {
-          console.warn('[users.controller] Failed to remove previous avatar from storage:', removeError);
+          console.warn('[users.controller] Impossible de supprimer l\'ancien avatar du stockage:', removeError);
         } else {
-          console.log('[users.controller] Removed previous avatar from storage:', previousAvatarPath);
+          console.log('[users.controller] Ancien avatar supprimé du stockage:', previousAvatarPath);
         }
       } catch (e) {
-        console.warn('[users.controller] Exception while removing previous avatar:', e?.message || e);
+        console.warn('[users.controller] Exception lors de la suppression de l\'ancien avatar:', e?.message || e);
       }
     }
 
@@ -249,4 +287,7 @@ export class UsersController {
     if (previousAvatarPath && previousAvatarPath !== filename) responseBody.removedPath = previousAvatarPath;
     return responseBody;
   }
+
+
 }
+

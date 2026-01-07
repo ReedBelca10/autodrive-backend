@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Schema as MongooseSchema } from 'mongoose';
 
 export type UserDocument = User & Document;
 
@@ -28,12 +28,21 @@ export class User {
 
   @Prop()
   avatarUrl?: string;
-  
+
   @Prop()
   avatarPath?: string;
 
   @Prop({ default: true })
   isActive?: boolean;
+
+  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Vehicle' }], default: [] })
+  favoriteVehicles: MongooseSchema.Types.ObjectId[];
+
+  @Prop()
+  resetPasswordToken?: string;
+
+  @Prop()
+  resetPasswordExpires?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -29,29 +29,29 @@ let UsersController = class UsersController {
         const user = req.user;
         const userId = (user === null || user === void 0 ? void 0 : user.userId) || (user === null || user === void 0 ? void 0 : user.sub) || (user === null || user === void 0 ? void 0 : user.id);
         if (!userId)
-            return res.status(400).send('User not found');
+            return res.status(400).send('Utilisateur non trouvé');
         let dbUser;
         try {
             dbUser = await this.usersService.findById(userId);
         }
         catch (e) {
-            return res.status(404).send('User not found');
+            return res.status(404).send('Utilisateur non trouvé');
         }
         const avatarPath = dbUser === null || dbUser === void 0 ? void 0 : dbUser.avatarPath;
         if (!avatarPath)
-            return res.status(404).send('Avatar not set');
+            return res.status(404).send('Avatar non défini');
         const bucket = process.env.SUPABASE_BUCKET || 'avatars';
         try {
             const expiresIn = 60;
             const { data: signedData, error: signedError } = await supabase_client_1.supabase.storage.from(bucket).createSignedUrl(avatarPath, expiresIn);
             if (signedError || !(signedData === null || signedData === void 0 ? void 0 : signedData.signedUrl)) {
-                console.warn('[users.controller] createSignedUrl failed, falling back to public URL or download', signedError);
+                console.warn('[users.controller] createSignedUrl a échoué, retour à l\'URL publique ou au téléchargement', signedError);
                 try {
                     const { data: pub } = supabase_client_1.supabase.storage.from(bucket).getPublicUrl(avatarPath);
                     if (pub && pub.publicUrl) {
                         const fetchRes = await fetch(pub.publicUrl);
                         if (!fetchRes.ok)
-                            return res.status(502).send('Failed to fetch avatar');
+                            return res.status(502).send('Impossible de récupérer l\'avatar');
                         res.setHeader('Content-Type', fetchRes.headers.get('content-type') || 'application/octet-stream');
                         try {
                             const body = fetchRes.body;
@@ -72,13 +72,13 @@ let UsersController = class UsersController {
                     }
                 }
                 catch (e) {
-                    console.warn('[users.controller] getPublicUrl fallback failed', (e === null || e === void 0 ? void 0 : e.message) || e);
+                    console.warn('[users.controller] le secours getPublicUrl a échoué', (e === null || e === void 0 ? void 0 : e.message) || e);
                 }
-                return res.status(502).send('Could not generate avatar URL');
+                return res.status(502).send('Impossible de générer l\'URL de l\'avatar');
             }
             const proxied = await fetch(signedData.signedUrl);
             if (!proxied.ok)
-                return res.status(502).send('Failed to fetch avatar');
+                return res.status(502).send('Impossible de récupérer l\'avatar');
             res.setHeader('Content-Type', proxied.headers.get('content-type') || 'application/octet-stream');
             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
             try {
@@ -99,9 +99,38 @@ let UsersController = class UsersController {
             }
         }
         catch (e) {
-            console.error('[users.controller] proxyAvatar error', (e === null || e === void 0 ? void 0 : e.message) || e);
-            return res.status(500).send('Internal error');
+            console.error('[users.controller] erreur proxyAvatar', (e === null || e === void 0 ? void 0 : e.message) || e);
+            return res.status(500).send('Erreur serveur');
         }
+    }
+    async getFavorites(req) {
+        const user = req.user;
+        const userId = (user === null || user === void 0 ? void 0 : user.userId) || (user === null || user === void 0 ? void 0 : user.sub) || (user === null || user === void 0 ? void 0 : user.id);
+        if (!userId)
+            throw new common_1.BadRequestException('Utilisateur non trouvé');
+        return await this.usersService.getFavorites(userId);
+    }
+    async addFavorite(req, vehicleId) {
+        const user = req.user;
+        const userId = (user === null || user === void 0 ? void 0 : user.userId) || (user === null || user === void 0 ? void 0 : user.sub) || (user === null || user === void 0 ? void 0 : user.id);
+        if (!userId)
+            throw new common_1.BadRequestException('Utilisateur non trouvé');
+        return await this.usersService.addFavorite(userId, vehicleId);
+    }
+    async removeFavorite(req, vehicleId) {
+        const user = req.user;
+        const userId = (user === null || user === void 0 ? void 0 : user.userId) || (user === null || user === void 0 ? void 0 : user.sub) || (user === null || user === void 0 ? void 0 : user.id);
+        if (!userId)
+            throw new common_1.BadRequestException('Utilisateur non trouvé');
+        return await this.usersService.removeFavorite(userId, vehicleId);
+    }
+    async isFavorite(req, vehicleId) {
+        const user = req.user;
+        const userId = (user === null || user === void 0 ? void 0 : user.userId) || (user === null || user === void 0 ? void 0 : user.sub) || (user === null || user === void 0 ? void 0 : user.id);
+        if (!userId)
+            throw new common_1.BadRequestException('Utilisateur non trouvé');
+        const isFav = await this.usersService.isFavorite(userId, vehicleId);
+        return { isFavorite: isFav };
     }
     async getUser(id) {
         const user = await this.usersService.findById(id);
@@ -125,21 +154,21 @@ let UsersController = class UsersController {
     }
     async uploadAvatar(req, file) {
         if (!file) {
-            console.warn('[users.controller] uploadAvatar called without file');
-            throw new common_1.BadRequestException('No file uploaded');
+            console.warn('[users.controller] uploadAvatar appelé sans fichier');
+            throw new common_1.BadRequestException('Aucun fichier téléchargé');
         }
         const user = req.user;
         const userId = (user === null || user === void 0 ? void 0 : user.userId) || (user === null || user === void 0 ? void 0 : user.sub) || (user === null || user === void 0 ? void 0 : user.id);
         if (!userId)
-            throw new common_1.BadRequestException('User not found in request');
-        console.log(`[users.controller] uploadAvatar start for user=${userId}, filename=${file.originalname}, size=${file.size}`);
+            throw new common_1.BadRequestException('Utilisateur non trouvé dans la requête');
+        console.log(`[users.controller] uploadAvatar start pour user=${userId}, filename=${file.originalname}, size=${file.size}`);
         const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
         if (!validTypes.includes(file.mimetype)) {
-            console.warn(`[users.controller] Invalid file type: ${file.mimetype}`);
-            throw new common_1.BadRequestException('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.');
+            console.warn(`[users.controller] Type de fichier invalide: ${file.mimetype}`);
+            throw new common_1.BadRequestException('Type de fichier invalide. Seuls JPEG, PNG, WebP et GIF sont autorisés.');
         }
         if (!supabase_client_1.supabase)
-            throw new common_1.BadRequestException('Supabase client not configured');
+            throw new common_1.BadRequestException('Client Supabase non configuré');
         const bucket = process.env.SUPABASE_BUCKET || 'avatars';
         const timestamp = Date.now();
         const sanitizedName = file.originalname
@@ -152,58 +181,58 @@ let UsersController = class UsersController {
             upsert: false,
         });
         if (error) {
-            console.error('[users.controller] Supabase upload error:', error);
-            throw new common_1.BadRequestException('Upload to storage failed: ' + error.message);
+            console.error('[users.controller] Erreur de téléchargement Supabase:', error);
+            throw new common_1.BadRequestException('Échec du téléchargement vers le stockage: ' + error.message);
         }
-        console.log('[users.controller] Supabase upload success:', { bucket, filename, data });
+        console.log('[users.controller] Succès du téléchargement Supabase:', { bucket, filename, data });
         let previousAvatarPath = undefined;
         try {
             const dbUser = await this.usersService.findById(userId);
             previousAvatarPath = dbUser === null || dbUser === void 0 ? void 0 : dbUser.avatarPath;
         }
         catch (e) {
-            console.warn('[users.controller] Could not fetch user before storing avatarPath:', (e === null || e === void 0 ? void 0 : e.message) || e);
+            console.warn('[users.controller] Impossible de récupérer l\'utilisateur avant de stocker avatarPath:', (e === null || e === void 0 ? void 0 : e.message) || e);
         }
         await this.usersService.setAvatarPath(userId, filename);
-        console.log(`[users.controller] Stored avatarPath=${filename} for user=${userId}`);
+        console.log(`[users.controller] avatarPath stocké=${filename} pour user=${userId}`);
         let resultUrl = undefined;
         try {
             const { data: urlData } = supabase_client_1.supabase.storage.from(bucket).getPublicUrl(filename);
             if (urlData && urlData.publicUrl) {
                 resultUrl = urlData.publicUrl;
-                console.log('[users.controller] Public URL available for avatar:', resultUrl);
+                console.log('[users.controller] URL publique disponible pour l\'avatar:', resultUrl);
             }
         }
         catch (e) {
-            console.warn('[users.controller] getPublicUrl error or not available:', (e === null || e === void 0 ? void 0 : e.message) || e);
+            console.warn('[users.controller] erreur getPublicUrl ou non disponible:', (e === null || e === void 0 ? void 0 : e.message) || e);
         }
         if (!resultUrl) {
             const expiresIn = 60 * 60;
             const { data: signedData, error: signedError } = await supabase_client_1.supabase.storage.from(bucket).createSignedUrl(filename, expiresIn);
             if (signedError) {
-                console.error('[users.controller] createSignedUrl error:', signedError);
+                console.error('[users.controller] erreur createSignedUrl:', signedError);
                 resultUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${filename}`;
             }
             else {
                 resultUrl = (signedData === null || signedData === void 0 ? void 0 : signedData.signedUrl) || `${process.env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${filename}`;
-                console.log('[users.controller] Signed URL created for avatar:', resultUrl);
+                console.log('[users.controller] URL signée créée pour l\'avatar:', resultUrl);
             }
         }
         await this.usersService.setAvatarUrl(userId, resultUrl || '');
         await this.usersService.setAvatarPath(userId, filename);
-        console.log(`[users.controller] Finished uploadAvatar for user=${userId}, avatarUrl=${resultUrl}`);
+        console.log(`[users.controller] uploadAvatar terminé pour user=${userId}, avatarUrl=${resultUrl}`);
         if (previousAvatarPath && previousAvatarPath !== filename) {
             try {
                 const { error: removeError } = await supabase_client_1.supabase.storage.from(bucket).remove([previousAvatarPath]);
                 if (removeError) {
-                    console.warn('[users.controller] Failed to remove previous avatar from storage:', removeError);
+                    console.warn('[users.controller] Impossible de supprimer l\'ancien avatar du stockage:', removeError);
                 }
                 else {
-                    console.log('[users.controller] Removed previous avatar from storage:', previousAvatarPath);
+                    console.log('[users.controller] Ancien avatar supprimé du stockage:', previousAvatarPath);
                 }
             }
             catch (e) {
-                console.warn('[users.controller] Exception while removing previous avatar:', (e === null || e === void 0 ? void 0 : e.message) || e);
+                console.warn('[users.controller] Exception lors de la suppression de l\'ancien avatar:', (e === null || e === void 0 ? void 0 : e.message) || e);
             }
         }
         const responseBody = { avatarUrl: resultUrl, avatarPath: filename };
@@ -222,6 +251,41 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "proxyAvatar", null);
+__decorate([
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.Get)('favorites'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getFavorites", null);
+__decorate([
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.Post)('favorites/:vehicleId'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('vehicleId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "addFavorite", null);
+__decorate([
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.Delete)('favorites/:vehicleId'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('vehicleId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "removeFavorite", null);
+__decorate([
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.Get)('favorites/:vehicleId/check'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('vehicleId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "isFavorite", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -254,7 +318,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateUser", null);
 __decorate([
-    Patch(':id/toggle-status'),
+    (0, common_1.Patch)(':id/toggle-status'),
     (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),

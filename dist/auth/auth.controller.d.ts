@@ -26,10 +26,6 @@ export declare class AuthController {
         message: string;
     }>;
     profile(req: Request): Promise<{
-        user: import("mongoose").Document<unknown, {}, import("../users/schemas/user.schema").UserDocument> & import("../users/schemas/user.schema").User & import("mongoose").Document<any, any, any> & {
-            _id: import("mongoose").Types.ObjectId;
-        };
-    } | {
         user: {
             _id: any;
             email: any;
@@ -41,6 +37,17 @@ export declare class AuthController {
         message: string;
     }>;
     refresh(req: Request, res: Response): Promise<{
+        message: string;
+    }>;
+    forgotPassword(body: {
+        email: string;
+    }): Promise<{
+        message: string;
+    }>;
+    resetPassword(body: {
+        token: string;
+        password: string;
+    }): Promise<{
         message: string;
     }>;
 }

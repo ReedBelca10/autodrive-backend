@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: autodrive-backend
+    env: node
+    plan: standard
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: MONGODB_URI
+        scope: build,runtime
+      - key: JWT_SECRET
+        scope: build,runtime
+      - key: FRONTEND_ORIGIN
+        scope: build,runtime
+      - key: STRIPE_SECRET_KEY
+        scope: build,runtime
+      - key: FEDAPAY_API_KEY
+        scope: build,runtime
+      - key: SUPABASE_URL
+        scope: build,runtime
+      - key: SUPABASE_KEY
+        scope: build,runtime
+      - key: SMTP_HOST
+        scope: build,runtime
+      - key: SMTP_PORT
+        scope: build,runtime
+      - key: SMTP_USER
+        scope: build,runtime
+      - key: SMTP_PASSWORD
+        scope: build,runtime
+      - key: SMTP_FROM
+        scope: build,runtime

@@ -1,19 +1,24 @@
 import { UsersService } from '../users/users.service';
+import { EmailService } from '../common/services/email.service';
 import { JwtService } from '@nestjs/jwt';
 export declare class AuthService {
     private usersService;
     private jwtService;
-    constructor(usersService: UsersService, jwtService: JwtService);
+    private emailService;
+    constructor(usersService: UsersService, jwtService: JwtService, emailService: EmailService);
     validateUser(email: string, pass: string): Promise<{
-        fullName: string;
         email: string;
-        phone?: string;
-        address?: string;
-        role?: string;
+        fullName: string;
+        phone: string;
+        address: string;
+        role: string;
+        avatarPath: string;
+        avatarUrl: string;
+        isActive: boolean;
         refreshToken?: string;
-        avatarUrl?: string;
-        avatarPath?: string;
-        isActive?: boolean;
+        favoriteVehicles: import("mongoose").Schema.Types.ObjectId[];
+        createdAt?: Date;
+        updatedAt?: Date;
         _id: any;
         __v?: any;
         $locals: Record<string, unknown>;
@@ -49,4 +54,10 @@ export declare class AuthService {
         refresh_token: string;
     }>;
     logoutRefreshToken(refreshToken: string): Promise<void>;
+    requestPasswordReset(email: string): Promise<{
+        message: string;
+    }>;
+    resetPassword(resetToken: string, newPassword: string): Promise<{
+        message: string;
+    }>;
 }

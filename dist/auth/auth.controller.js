@@ -81,7 +81,7 @@ let AuthController = AuthController_1 = class AuthController {
             const url = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirect)}&scope=${scope}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
             return res.redirect(url);
         }
-        return res.status(400).send({ error: 'Unsupported provider' });
+        return res.status(400).send({ error: 'Fournisseur non supporté' });
     }
     async googleCallback(req, res) {
         const code = req.query.code;
@@ -125,7 +125,7 @@ let AuthController = AuthController_1 = class AuthController {
             return res.redirect(frontend + '/');
         }
         catch (e) {
-            console.warn('Google OAuth callback error', e);
+            console.warn('Erreur de rappel Google OAuth', e);
             return res.redirect((process.env.FRONTEND_ORIGIN || 'http://localhost:3000') + '/login?error=oauth');
         }
     }
@@ -163,7 +163,7 @@ let AuthController = AuthController_1 = class AuthController {
             return res.redirect(frontend + '/');
         }
         catch (e) {
-            console.warn('Facebook OAuth callback error', e);
+            console.warn('Erreur de rappel Facebook OAuth', e);
             return res.redirect((process.env.FRONTEND_ORIGIN || 'http://localhost:3000') + '/login?error=oauth');
         }
     }
@@ -176,7 +176,7 @@ let AuthController = AuthController_1 = class AuthController {
             const codeVerifier = AuthController_1.twitterPkce.get(state);
             AuthController_1.twitterPkce.delete(state);
             if (!codeVerifier)
-                throw new Error('PKCE code_verifier not found');
+                throw new Error('Code_verifier PKCE non trouvé');
             const tokenRes = await fetch('https://api.twitter.com/2/oauth2/token', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -245,13 +245,13 @@ let AuthController = AuthController_1 = class AuthController {
             return result.user || result;
         }
         catch (err) {
-            throw new common_1.BadRequestException(err.message || 'Registration failed');
+            throw new common_1.BadRequestException(err.message || 'Registration a échoué');
         }
     }
     async login(dto, res) {
         const user = await this.authService.validateUser(dto.email, dto.password);
         if (!user)
-            throw new common_1.BadRequestException('Invalid credentials');
+            throw new common_1.BadRequestException('credentials invalide');
         const tokenObj = await this.authService.login(user);
         const access = tokenObj.access_token;
         const refresh = tokenObj.refresh_token;
@@ -275,11 +275,11 @@ let AuthController = AuthController_1 = class AuthController {
         const user = req.user;
         const id = (user === null || user === void 0 ? void 0 : user.userId) || (user === null || user === void 0 ? void 0 : user.sub) || (user === null || user === void 0 ? void 0 : user.id);
         if (!id)
-            throw new common_1.BadRequestException('User not found');
+            throw new common_1.BadRequestException('Utilisateur non trouvé');
         try {
             const dbUser = await this.usersService.findById(id);
             if (!dbUser)
-                throw new common_1.NotFoundException('User not found in DB');
+                throw new common_1.NotFoundException('Utilisateur non trouvé in DB');
             if (dbUser.avatarPath && !dbUser.avatarUrl && process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
                 try {
                     console.log(`[auth.controller] Generating signed URL for user=${id}, avatarPath=${dbUser.avatarPath}`);
@@ -352,6 +352,21 @@ let AuthController = AuthController_1 = class AuthController {
             path: '/',
         });
         return { message: 'ok' };
+    }
+    async forgotPassword(body) {
+        if (!body.email) {
+            throw new common_1.BadRequestException('Email est requis');
+        }
+        return await this.authService.requestPasswordReset(body.email);
+    }
+    async resetPassword(body) {
+        if (!body.token || !body.password) {
+            throw new common_1.BadRequestException('Token et mot de passe sont requis');
+        }
+        if (body.password.length < 6) {
+            throw new common_1.BadRequestException('Le mot de passe doit contenir au moins 6 caractères');
+        }
+        return await this.authService.resetPassword(body.token, body.password);
     }
 };
 exports.AuthController = AuthController;
@@ -428,6 +443,20 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "refresh", null);
+__decorate([
+    (0, common_1.Post)('forgot-password'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "forgotPassword", null);
+__decorate([
+    (0, common_1.Post)('reset-password'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = AuthController_1 = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService, jwt_1.JwtService, users_service_1.UsersService])

@@ -16,7 +16,7 @@ exports.UsersService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
-const user_schema_1 = require("./schemas/user.schema");
+const user_schema_1 = require("./user.schema");
 const bcrypt = require("bcryptjs");
 let UsersService = class UsersService {
     constructor(userModel) {
@@ -28,7 +28,7 @@ let UsersService = class UsersService {
     async create(createUserDto) {
         const existing = await this.userModel.findOne({ email: createUserDto.email }).exec();
         if (existing)
-            throw new common_1.ConflictException('Email already in use');
+            throw new common_1.ConflictException('Email déjà utilisé');
         const hashed = await bcrypt.hash(createUserDto.password, 10);
         const created = new this.userModel({
             ...createUserDto,
@@ -44,19 +44,19 @@ let UsersService = class UsersService {
         });
         const user = await this.userModel.findByIdAndUpdate(id, updateData, { new: true }).select('-password').lean();
         if (!user)
-            throw new common_1.NotFoundException('User not found');
+            throw new common_1.NotFoundException('Utilisateur non trouvé');
         return user;
     }
     async delete(id) {
         const result = await this.userModel.findByIdAndDelete(id).lean();
         if (!result)
-            throw new common_1.NotFoundException('User not found');
-        return { message: 'User deleted successfully' };
+            throw new common_1.NotFoundException('Utilisateur non trouvé');
+        return { message: 'Utilisateur supprimé avec succès' };
     }
     async toggleStatus(id) {
         const user = await this.userModel.findById(id).lean();
         if (!user)
-            throw new common_1.NotFoundException('User not found');
+            throw new common_1.NotFoundException('Utilisateur non trouvé');
         const newStatus = !user.isActive;
         const updated = await this.userModel.findByIdAndUpdate(id, { isActive: newStatus }, { new: true }).select('-password').lean();
         return updated;
@@ -67,7 +67,7 @@ let UsersService = class UsersService {
     async findById(id) {
         const user = await this.userModel.findById(id).exec();
         if (!user)
-            throw new common_1.NotFoundException('User not found');
+            throw new common_1.NotFoundException('Utilisateur non trouvé');
         return user;
     }
     async setRefreshToken(userId, refreshToken) {
@@ -111,6 +111,82 @@ let UsersService = class UsersService {
             role: 'user',
         });
         return created.save();
+    }
+    async getFavorites(userId) {
+        const user = await this.userModel
+            .findById(userId)
+            .populate('favoriteVehicles')
+            .select('favoriteVehicles')
+            .exec();
+        if (!user)
+            throw new common_1.NotFoundException('Utilisateur non trouvé');
+        return user.favoriteVehicles || [];
+    }
+    async addFavorite(userId, vehicleId) {
+        const user = (await this.userModel.findById(userId).exec());
+        if (!user)
+            throw new common_1.NotFoundException('Utilisateur non trouvé');
+        if (!user.favoriteVehicles) {
+            user.favoriteVehicles = [];
+        }
+        const favs = user.favoriteVehicles;
+        const isAlreadyFavorite = favs.some(id => id.toString() === vehicleId);
+        if (isAlreadyFavorite) {
+            return { message: 'Véhicule déjà en favoris', favoriteCount: favs.length };
+        }
+        favs.push(vehicleId);
+        await user.save();
+        return {
+            message: 'Véhicule ajouté aux favoris',
+            favoriteCount: favs.length,
+            vehicleId
+        };
+    }
+    async removeFavorite(userId, vehicleId) {
+        const user = (await this.userModel.findById(userId).exec());
+        if (!user)
+            throw new common_1.NotFoundException('Utilisateur non trouvé');
+        let favs = user.favoriteVehicles;
+        if (!favs) {
+            favs = [];
+        }
+        user.favoriteVehicles = favs.filter(id => id.toString() !== vehicleId);
+        await user.save();
+        return {
+            message: 'Véhicule supprimé des favoris',
+            favoriteCount: user.favoriteVehicles.length,
+            vehicleId
+        };
+    }
+    async isFavorite(userId, vehicleId) {
+        const user = (await this.userModel.findById(userId).exec());
+        if (!user)
+            throw new common_1.NotFoundException('Utilisateur non trouvé');
+        const favs = user.favoriteVehicles;
+        if (!favs) {
+            return false;
+        }
+        return favs.some(id => id.toString() === vehicleId);
+    }
+    async setPasswordResetToken(userId, token, expiresInSeconds) {
+        const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+        await this.userModel.findByIdAndUpdate(userId, {
+            resetPasswordToken: token,
+            resetPasswordExpires: expiresAt
+        }).exec();
+    }
+    async findByResetToken(token) {
+        return this.userModel.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: new Date() }
+        }).exec();
+    }
+    async updatePassword(userId, hashedPassword) {
+        await this.userModel.findByIdAndUpdate(userId, {
+            password: hashedPassword,
+            resetPasswordToken: undefined,
+            resetPasswordExpires: undefined
+        }).exec();
     }
 };
 exports.UsersService = UsersService;
