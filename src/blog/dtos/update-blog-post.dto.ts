@@ -27,8 +27,12 @@ export class UpdateBlogPostDto {
   tags?: string[];
 
   @IsOptional()
-  @IsEnum(['conseils', 'actualités', 'guides', 'tutoriels'])
+  @IsEnum(['conseils', 'actualités', 'guides', 'tutoriels', 'news', 'autres'])
   category?: string;
+
+  @IsOptional()
+  @IsArray()
+  media?: { url: string; type: string; name: string }[];
 
   @IsOptional()
   @IsBoolean()

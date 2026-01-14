@@ -23,21 +23,33 @@ export class BlogPost {
   @Prop({ default: '' })
   imageUrl: string;
 
-  @Prop({ 
-    type: [String], 
+  @Prop({
+    type: [String],
     default: []
   })
   tags: string[];
 
-  @Prop({ 
+  @Prop({
     type: String,
-    enum: ['conseils', 'actualités', 'guides', 'tutoriels'],
+    enum: ['conseils', 'actualités', 'guides', 'tutoriels', 'news', 'autres'],
     default: 'actualités'
   })
   category: string;
 
   @Prop({ default: true })
   published: boolean;
+
+  @Prop({
+    type: [
+      {
+        url: { type: String },
+        type: { type: String },
+        name: { type: String },
+      },
+    ],
+    default: [],
+  })
+  media: { url: string; type: string; name: string }[];
 
   @Prop({ default: 0 })
   views: number;

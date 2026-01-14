@@ -10,15 +10,69 @@ import {
   UseGuards,
   UnauthorizedException,
   Req,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { BlogService } from './blog.service';
+import { BlogUploadService } from './blog-upload.service';
 import { CreateBlogPostDto } from './dtos/create-blog-post.dto';
 import { UpdateBlogPostDto } from './dtos/update-blog-post.dto';
 
 @Controller('blog')
 export class BlogController {
-  constructor(private readonly blogService: BlogService) {}
+  constructor(
+    private readonly blogService: BlogService,
+    private readonly uploadService: BlogUploadService,
+  ) { }
+
+  @Post('upload/media')
+  @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadMedia(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+    try {
+      // Vérifier que l'utilisateur est admin ou manager
+      const userRole = (req.user as any)?.role;
+      if (userRole !== 'admin' && userRole !== 'manager') {
+        throw new UnauthorizedException('Seuls les administrateurs et managers peuvent uploader des médias');
+      }
+
+      if (!file) {
+        throw new BadRequestException('Aucun fichier fourni');
+      }
+
+      // Validation de la taille (10 MB max)
+      const maxTaille = 10 * 1024 * 1024; // 10 MB
+      if (file.size > maxTaille) {
+        throw new BadRequestException('Fichier trop volumineux (max 10 MB)');
+      }
+
+      // Générer un nom unique
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(7);
+      const originalNameWithoutExt = file.originalname.replace(/\.[^/.]+$/, '');
+      const ext = file.originalname.split('.').pop();
+      const fileName = `${timestamp}_${random}_${originalNameWithoutExt}.${ext}`;
+
+      const publicUrl = await this.uploadService.uploadMediaFile(file, fileName);
+
+      return {
+        success: true,
+        publicUrl,
+        fileName,
+        type: file.mimetype,
+      };
+    } catch (err: any) {
+      if (err instanceof BadRequestException || err instanceof UnauthorizedException) {
+        throw err;
+      }
+      throw new BadRequestException(
+        err.message || 'Erreur lors du téléchargement du fichier',
+      );
+    }
+  }
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
@@ -29,9 +83,16 @@ export class BlogController {
       throw new UnauthorizedException('Utilisateur non authentifié');
     }
     // Temporairement permis à tous les utilisateurs authentifiés (à adapter selon vos besoins)
-    console.log('[blog.controller] User role:', user.role, 'Full user:', user);
-    
-    return this.blogService.create(createBlogPostDto);
+    console.log('[BlogController] create called with:', JSON.stringify(createBlogPostDto, null, 2));
+
+    try {
+      const result = await this.blogService.create(createBlogPostDto);
+      console.log('[BlogController] create success:', (result as any)._id);
+      return result;
+    } catch (err) {
+      console.error('[BlogController] create error:', err);
+      throw err;
+    }
   }
 
   @Get()
@@ -75,7 +136,16 @@ export class BlogController {
     if (userRole !== 'admin' && userRole !== 'manager') {
       throw new UnauthorizedException('Accès restreint aux admin et managers');
     }
-    return this.blogService.update(id, updateBlogPostDto);
+    console.log('[BlogController] update called for id:', id, 'data:', JSON.stringify(updateBlogPostDto, null, 2));
+
+    try {
+      const result = await this.blogService.update(id, updateBlogPostDto);
+      console.log('[BlogController] update success:', (result as any)._id);
+      return result;
+    } catch (err) {
+      console.error('[BlogController] update error:', err);
+      throw err;
+    }
   }
 
   @Delete(':id')
