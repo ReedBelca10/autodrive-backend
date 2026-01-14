@@ -29,6 +29,7 @@
 - ✅ FAQ (Questions Fréquemment Posées)
 - ✅ Newsletter (Abonnements)
 - ✅ Formulaire de contact
+- ✅ Système de notifications temps réel
 - ✅ Favoris de véhicules
 - ✅ Système de rôles (Admin/Manager/Client)
 

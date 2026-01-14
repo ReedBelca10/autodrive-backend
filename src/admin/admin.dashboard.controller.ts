@@ -11,7 +11,7 @@ export class AdminDashboardController {
     @InjectModel('Vehicle') private vehicleModel: Model<any>,
     @InjectModel('Reservation') private reservationModel: Model<any>,
     @InjectModel('Agency') private agencyModel: Model<any>,
-  ) {}
+  ) { }
 
   @Get('stats')
   async getStats() {
@@ -77,7 +77,7 @@ export class AdminDashboardController {
       return await this.reservationModel
         .find()
         .populate('userId', 'email fullName')
-        .populate('vehicleId', 'brand model')
+        .populate('vehicleId', 'name')
         .limit(50)
         .lean();
     } catch (err) {

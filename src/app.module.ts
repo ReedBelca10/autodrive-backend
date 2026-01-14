@@ -11,6 +11,7 @@ import { AgenciesModule } from './agencies/agencies.module';
 import { BlogModule } from './blog/blog.module';
 import { FaqModule } from './faq/faq.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ dotenv.config();
     BlogModule,
     FaqModule,
     NewsletterModule,
+    NotificationsModule,
   ],
 })
 export class AppModule { }

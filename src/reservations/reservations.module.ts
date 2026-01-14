@@ -6,6 +6,7 @@ import { ReservationSchema } from './schemas/reservation.schema';
 import { VehicleSchema } from '../vehicles/schemas/vehicle.schema';
 import { AgencySchema } from '../agencies/schemas/agency.schema';
 import { PaymentsModule } from '../payments/payments.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { PaymentsModule } from '../payments/payments.module';
       { name: 'Agency', schema: AgencySchema },
     ]),
     PaymentsModule,
+    NotificationsModule,
   ],
   providers: [ReservationsService],
   controllers: [ReservationsController],

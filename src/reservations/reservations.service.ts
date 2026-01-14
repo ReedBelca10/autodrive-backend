@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import Stripe from 'stripe';
 import { FedapayService } from '../payments/fedapay.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-12-15.clover',
@@ -15,6 +16,7 @@ export class ReservationsService {
     @InjectModel('Vehicle') private vehicleModel: Model<any>,
     @InjectModel('Agency') private agencyModel: Model<any>,
     private fedapayService: FedapayService,
+    private notificationsService: NotificationsService,
   ) { }
 
   async findAll() {
@@ -120,7 +122,7 @@ export class ReservationsService {
     return reservations.map((res: any) => {
       const vehicle = res.vehicleId || {};
       const vehicleName = vehicle.name || `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() || 'N/A';
-      
+
       return {
         _id: res._id.toString(),
         vehicleId: {
@@ -256,11 +258,41 @@ export class ReservationsService {
 
     const reservation = new this.reservationModel({
       ...reservationData,
+      userId: userIdObj,
       totalPrice,
-      status: 'pending'
+      status: 'pending' // Keep status as pending
     });
 
-    return await reservation.save();
+    const savedReservation = await reservation.save();
+
+    // --- NOTIFICATIONS ---
+    try {
+      const fullVehicle = await this.vehicleModel.findById(reservation.vehicleId).populate('agencyId').exec();
+      const managerId = fullVehicle?.agencyId?.managerId;
+
+      // Message pour le manager
+      if (managerId) {
+        await this.notificationsService.create({
+          recipientId: managerId.toString(),
+          title: 'Nouvelle réservation reçue',
+          content: `Une nouvelle réservation a été effectuée pour le véhicule ${fullVehicle.name}.`,
+          type: 'reservation_new',
+          reservationId: savedReservation._id.toString(),
+        });
+      }
+
+      // Message pour les admins
+      await this.notificationsService.notifyAdmins({
+        title: 'Nouvelle réservation (Admin)',
+        content: `Une nouvelle réservation (#${savedReservation._id}) a été créée par un utilisateur.`,
+        type: 'reservation_new',
+        reservationId: savedReservation._id.toString(),
+      });
+    } catch (notifyErr) {
+      console.error('Erreur lors de l\'envoi des notifications de création:', notifyErr);
+    }
+
+    return savedReservation;
   }
 
   async confirmReservation(id: string, userId: string) {
@@ -272,7 +304,7 @@ export class ReservationsService {
 
     // Vérifier que c'est le propriétaire de la réservation OU le manager du véhicule
     const isOwner = reservation.userId.toString() === userId;
-    
+
     let isManager = false;
     if (!isOwner && reservation.vehicleId) {
       const vehicle: any = reservation.vehicleId;
@@ -454,6 +486,10 @@ export class ReservationsService {
       ).exec();
 
       await reservation.save();
+
+      // --- NOTIFICATION CLIENT ---
+      await this.sendConfirmationNotification(reservation);
+
       return { success: true, reservation };
     } else {
       throw new BadRequestException('Le paiement n\'a pas été validé');
@@ -478,6 +514,10 @@ export class ReservationsService {
       ).exec();
 
       await reservation.save();
+
+      // --- NOTIFICATION CLIENT ---
+      await this.sendConfirmationNotification(reservation);
+
       return { success: true, reservation };
     } else {
       throw new BadRequestException('Le paiement n\'a pas été validé');
@@ -520,6 +560,12 @@ export class ReservationsService {
       }
 
       await reservation.save();
+
+      // --- NOTIFICATION CLIENT ---
+      if (status === 'approved') {
+        await this.sendConfirmationNotification(reservation);
+      }
+
       return { success: true, reservation };
     } catch (error: any) {
       throw new BadRequestException(`Erreur lors du traitement du callback: ${error.message}`);
@@ -552,6 +598,9 @@ export class ReservationsService {
         ).exec();
 
         await reservation.save();
+
+        // --- NOTIFICATION CLIENT ---
+        await this.sendConfirmationNotification(reservation);
       }
 
       return {
@@ -563,6 +612,34 @@ export class ReservationsService {
       };
     } catch (error: any) {
       throw new BadRequestException(`Erreur lors de la vérification du statut: ${error.message}`);
+    }
+  }
+
+  private async sendConfirmationNotification(reservation: any) {
+    try {
+      const fullReservation = await this.reservationModel
+        .findById(reservation._id)
+        .populate({
+          path: 'vehicleId',
+          populate: { path: 'agencyId' }
+        })
+        .exec();
+
+      if (!fullReservation || !fullReservation.vehicleId || !fullReservation.vehicleId.agencyId) return;
+
+      const vehicle = fullReservation.vehicleId;
+      const agency = vehicle.agencyId;
+      const mapsLink = `https://www.google.com/maps?q=${agency.latitude},${agency.longitude}`;
+
+      await this.notificationsService.create({
+        recipientId: reservation.userId.toString(),
+        title: 'Réservation confirmée ✅',
+        content: `Votre réservation pour le véhicule ${vehicle.name} est confirmée. Vous pouvez récupérer le véhicule à l'agence ${agency.name} (${agency.city}). Localisation: ${mapsLink}`,
+        type: 'reservation_confirmed',
+        reservationId: reservation._id.toString(),
+      });
+    } catch (err) {
+      console.error('Erreur lors de l\'envoi de la notification de confirmation:', err);
     }
   }
 }

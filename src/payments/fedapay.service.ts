@@ -43,13 +43,9 @@ export class FedapayService {
     ): Promise<FedapayTransactionResponse> {
         try {
             const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
-            if (!process.env.BACKEND_URL) {
-                this.logger.warn('BACKEND_URL is not set, using default: http://localhost:3001');
-            }
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
             this.logger.log(`Creating FedaPay transaction: ${description}, Amount: ${amount} XOF`);
-            this.logger.log(`FedaPay API Key configured: ${process.env.FEDAPAY_SECRET_KEY ? 'YES' : 'NO'}`);
-            this.logger.log(`FedaPay Environment: ${process.env.FEDAPAY_ENVIRONMENT}`);
 
             const transactionPayload = {
                 amount,
@@ -58,6 +54,7 @@ export class FedapayService {
                 },
                 description,
                 callback_url: `${backendUrl}/reservations/fedapay-callback`,
+                redirect_url: `${frontendUrl}/profile/reservations`,
                 metadata
             };
 

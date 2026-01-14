@@ -8,12 +8,13 @@ import {
   Patch,
   UseGuards,
   Req,
+  Res,
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ReservationsService } from './reservations.service';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
 @Controller('reservations')
 export class ReservationsController {
@@ -46,6 +47,49 @@ export class ReservationsController {
     const userId = user?.userId || user?.sub || user?.id;
     if (!userId) throw new BadRequestException('Utilisateur non trouvé');
     return await this.reservationsService.findByUserId(userId);
+  }
+
+  @Get('fedapay-callback')
+  async handleFedapayRedirect(@Res() res: Response) {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    // On renvoie une petite page HTML qui ferme la fenêtre (si c'est un popup)
+    // ou redirige vers le profil (si c'est la fenêtre principale)
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Paiement AutoDrive</title>
+          <style>
+            body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f9fafb; }
+            .card { background: white; padding: 2rem; border-radius: 12px; shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); text-align: center; }
+            .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="loader"></div>
+            <p>Paiement validé ! Fermeture de la fenêtre...</p>
+            <script>
+              setTimeout(function() {
+                if (window.opener || window.history.length === 1) {
+                  window.close();
+                } else {
+                  window.location.href = "${frontendUrl}/profile/reservations";
+                }
+              }, 1500);
+            </script>
+          </div>
+        </body>
+      </html>
+    `);
+  }
+
+  @Post('fedapay-callback')
+  async handleFedapayCallback(@Body() payload: any) {
+    // Endpoint pour recevoir les webhooks de FedaPay (POST)
+    return await this.reservationsService.handleFedapayCallback(payload);
   }
 
   @Get(':id')
@@ -140,12 +184,6 @@ export class ReservationsController {
     return await this.reservationsService.verifyFedapayPayment(id, userId, body.transactionId);
   }
 
-  @Post('fedapay-callback')
-  async handleFedapayCallback(@Body() payload: any) {
-    // Endpoint pour recevoir les webhooks de FedaPay
-    // Note: En production, vous devriez vérifier la signature du webhook
-    return await this.reservationsService.handleFedapayCallback(payload);
-  }
 
   @UseGuards(AuthGuard('jwt'))
   @Get(':id/fedapay-status')
