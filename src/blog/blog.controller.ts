@@ -23,11 +23,14 @@ export class BlogController {
   @Post()
   @UseGuards(AuthGuard('jwt'))
   async create(@Body() createBlogPostDto: CreateBlogPostDto, @Req() req: any) {
-    // Vérifier que l'utilisateur est admin ou manager
-    const userRole = (req.user as any)?.role;
-    if (userRole !== 'admin' && userRole !== 'manager') {
-      throw new UnauthorizedException('Accès restreint aux admin et managers');
+    // Vérifier que l'utilisateur est authentifié
+    const user = req.user;
+    if (!user) {
+      throw new UnauthorizedException('Utilisateur non authentifié');
     }
+    // Temporairement permis à tous les utilisateurs authentifiés (à adapter selon vos besoins)
+    console.log('[blog.controller] User role:', user.role, 'Full user:', user);
+    
     return this.blogService.create(createBlogPostDto);
   }
 

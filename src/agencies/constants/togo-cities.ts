@@ -29,11 +29,8 @@ export const TOGO_CITIES = [
   'Gando',
   'Kpélé',
   'Womé',
-  'Kouvé',
   'Niamtougou',
   'Kéran',
   'Cinkassé',
-  'Kouvé',
-  'Kpélé',
   'Blitta',
-];
+].sort();

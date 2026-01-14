@@ -220,29 +220,12 @@ export class AuthController {
   }
 
   @Post('register')
-  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
+  async register(@Body() dto: RegisterDto) {
     try {
-      const result = await this.authService.register(dto);
-      // authService.register returns { user, access_token, refresh_token }
-      const access = (result as any).access_token;
-      const refresh = (result as any).refresh_token;
-      if (access && refresh) {
-        res.cookie('autodrive_token', access, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 1000 * 60 * 60,
-          path: '/',
-        });
-        res.cookie('autodrive_refresh', refresh, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 1000 * 60 * 60 * 24 * 7,
-          path: '/',
-        });
-      }
-      return (result as any).user || result;
+      await this.authService.register(dto);
+      // Just return success message - don't set cookies
+      // User must login manually to get tokens
+      return { message: 'Inscription réussie. Veuillez vous connecter avec vos identifiants.' };
     } catch (err: any) {
       throw new BadRequestException(err.message || 'Registration a échoué');
     }

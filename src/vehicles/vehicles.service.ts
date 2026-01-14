@@ -100,12 +100,6 @@ export class VehiclesService {
 
     if (vehicle) {
       vehicle.mediaUrls = this.normalizeMediaUrls(vehicle.mediaUrls || []);
-      
-      // Si agencyId est peuplé, le renommer en agency
-      if (vehicle.agencyId && typeof vehicle.agencyId === 'object') {
-        vehicle.agency = vehicle.agencyId;
-        delete vehicle.agencyId;
-      }
     }
 
     return vehicle;

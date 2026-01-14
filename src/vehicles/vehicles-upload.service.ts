@@ -30,8 +30,16 @@ export class VehiclesUploadService {
         throw new BadRequestException('Nom de fichier manquant');
       }
 
+      // Nettoyer le nom du fichier : remplacer les espaces et caractères spéciaux
+      const cleanFileName = fileName
+        .replace(/\s+/g, '_') // Remplacer les espaces par des underscores
+        .replace(/[^\w\-._]/g, '') // Supprimer les caractères spéciaux
+        .replace(/_+/g, '_') // Remplacer les underscores multiples par un seul
+        .toLowerCase(); // Convertir en minuscules
+
       // Logs
       console.log(`📤 Démarrage du téléchargement: ${fileName}`);
+      console.log(`   Nom nettoyé: ${cleanFileName}`);
       console.log(`   Nom original: ${file.originalname}`);
       console.log(`   Taille: ${(file.size / 1024).toFixed(2)} KB`);
       console.log(`   Type: ${file.mimetype}`);
@@ -43,7 +51,7 @@ export class VehiclesUploadService {
 
       // Upload vers Supabase
       const bucketName = 'vehicle_medias';
-      const filePath = `vehicles/${fileName}`;
+      const filePath = `vehicles/${cleanFileName}`;
 
       console.log(`   Téléchargement vers: ${bucketName}/${filePath}`);
 

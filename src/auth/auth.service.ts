@@ -47,7 +47,7 @@ export class AuthService {
     // générer les jetons et stocker le jeton de rafraîchissement
     const tokens = await this.getTokens(user);
     await this.usersService.setRefreshToken(user._id, tokens.refreshToken);
-    const { password, ...rest } = user.toObject();
+    const { password, ...rest } = user;
     return { user: rest, access_token: tokens.accessToken, refresh_token: tokens.refreshToken };
   }
 
