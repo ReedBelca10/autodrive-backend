@@ -26,6 +26,8 @@
 - ✅ Upload de médias (Supabase)
 - ✅ Gestion des utilisateurs et profils
 - ✅ Blog avec articles
+- ✅ FAQ (Questions Fréquemment Posées)
+- ✅ Newsletter (Abonnements)
 - ✅ Formulaire de contact
 - ✅ Favoris de véhicules
 - ✅ Système de rôles (Admin/Manager/Client)
@@ -66,7 +68,8 @@ Backend
 │ ├──────────────────────────────────────────────────────┤│
 │ │  Auth Module      Vehicles Module   Reservations    ││
 │ │  Users Module     Agencies Module   Blog Module     ││
-│ │  Contact Module   Payments Module                   ││
+│ │  Contact Module   Payments Module   Faq Module     ││
+│ │  Newsletter Module                                  ││
 │ └──────────────────────────────────────────────────────┘│
 ├─────────────────────────────────────────────────────────┤
 │ ┌──────────────────────────────────────────────────────┐│
@@ -445,6 +448,52 @@ POST   /contact  - Soumettre un message de contact
   message: string;
   phone: string;
   createdAt: Date;
+}
+```
+
+### 10. **FAQ Module** (`src/faq/`)
+
+Gestion des questions fréquemment posées.
+
+**Routes:**
+```
+GET    /faq                - Toutes les FAQ publiées (public)
+GET    /faq/admin          - Toutes les FAQ (admin/manager)
+POST   /faq                - Créer une FAQ
+PUT    /faq/:id            - Modifier une FAQ
+DELETE /faq/:id            - Supprimer une FAQ
+```
+
+**Schéma FAQ:**
+```typescript
+{
+  question: string;
+  answer: string;
+  category: string;
+  order: number;
+  published: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### 11. **Newsletter Module** (`src/newsletter/`)
+
+Gestion des abonnements à la newsletter.
+
+**Routes:**
+```
+POST   /newsletter/subscribe   - S'abonner (public)
+GET    /newsletter/admin       - Liste des abonnés (admin/manager)
+```
+
+**Schéma Newsletter:**
+```typescript
+{
+  email: string (unique);
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 

@@ -9,6 +9,8 @@ import { VehiclesModule } from './vehicles/vehicles.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { AgenciesModule } from './agencies/agencies.module';
 import { BlogModule } from './blog/blog.module';
+import { FaqModule } from './faq/faq.module';
+import { NewsletterModule } from './newsletter/newsletter.module';
 
 dotenv.config();
 
@@ -25,6 +27,8 @@ dotenv.config();
     ReservationsModule,
     AgenciesModule,
     BlogModule,
+    FaqModule,
+    NewsletterModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }
