@@ -1,4 +1,4 @@
-# 🚗 AutoDrive Backend - Documentation Complète
+# AutoDrive Backend - Documentation Complète
 
 ## Table des Matières
 1. [Vue d'ensemble](#vue-densemble)
@@ -18,20 +18,20 @@
 
 **AutoDrive Backend** est un serveur NestJS complèt pour la gestion d'une plateforme de location de véhicules. Il gère :
 
-- ✅ Authentification JWT avec Passport
-- ✅ Gestion complète des véhicules
-- ✅ Système de réservations avancé
-- ✅ Paiements sécurisés (Stripe + FedaPay)
-- ✅ Gestion des agences et managers
-- ✅ Upload de médias (Supabase)
-- ✅ Gestion des utilisateurs et profils
-- ✅ Blog avec articles
-- ✅ FAQ (Questions Fréquemment Posées)
-- ✅ Newsletter (Abonnements)
-- ✅ Formulaire de contact
-- ✅ Système de notifications temps réel
-- ✅ Favoris de véhicules
-- ✅ Système de rôles (Admin/Manager/Client)
+- Authentification JWT avec Passport
+- Gestion complète des véhicules
+- Système de réservations avancé
+- Paiements sécurisés (Stripe + FedaPay)
+- Gestion des agences et managers
+- Upload de médias (Supabase)
+- Gestion des utilisateurs et profils
+- Blog avec articles
+- FAQ (Questions Fréquemment Posées)
+- Newsletter (Abonnements)
+- Formulaire de contact
+- Système de notifications temps réel
+- Favoris de véhicules
+- Système de rôles (Admin/Manager/Client)
 
 **Version**: 1.0.0
 **Node**: v18+
@@ -783,13 +783,13 @@ Client
 
 ### Sécurité
 
-- ✅ Bcrypt password hashing (salt: 10)
-- ✅ CORS restrictif
-- ✅ HttpOnly + Secure cookies
-- ✅ Validation DTOs + class-validator
-- ✅ Exception filtering global
-- ✅ Rate limiting (à implémenter)
-- ✅ Input sanitization
+- Bcrypt password hashing (salt: 10)
+- CORS restrictif
+- HttpOnly + Secure cookies
+- Validation DTOs + class-validator
+- Exception filtering global
+- Rate limiting (à implémenter)
+- Input sanitization
 
 ### Bonnes Pratiques Implémentées
 
@@ -1027,11 +1027,3 @@ async findAll() { ... }
 - **Stripe Docs**: https://stripe.com/docs
 - **Supabase Docs**: https://supabase.com/docs
 - **JWT**: https://jwt.io
-
-## Contributeurs
-
-- Équipe AutoDrive
-
-## License
-
-MIT

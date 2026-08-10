@@ -2,7 +2,7 @@
 
 Il y a 3 façons d'ajouter les articles du guide d'utilisation au blog AutoDrive:
 
-## Méthode 1: Via MongoDB Shell (Recommandée - Plus Simple) ⭐
+## Méthode 1: Via MongoDB Shell (Recommandée - Plus Simple) 
 
 Cette méthode insère directement les articles dans la base de données MongoDB.
 

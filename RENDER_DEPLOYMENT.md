@@ -1,4 +1,4 @@
-# 🚀 Guide de Déploiement sur Render
+# Guide de Déploiement sur Render
 
 ## Étapes d'Installation
 
@@ -59,7 +59,7 @@
 
 ---
 
-## ⚠️ Configuration Important
+## Configuration Important
 
 ### MongoDB
 - Utilisez MongoDB Atlas (gratuit jusqu'à 512MB)
@@ -82,7 +82,7 @@
 
 ---
 
-## 🔄 Redéploiement Automatique
+## Redéploiement Automatique
 
 Render redéploie automatiquement quand vous pushez sur la branche configurée:
 
@@ -96,7 +96,7 @@ Vérifiez l'état du déploiement dans l'onglet **Deploys** de Render.
 
 ---
 
-## 🐛 Vérifier que le Backend Fonctionne
+## Vérifier que le Backend Fonctionne
 
 ```bash
 # Tester l'API
@@ -108,7 +108,7 @@ curl https://autodrive-backend.onrender.com/health
 
 ---
 
-## 💾 Backup des Variables d'Environnement
+## Backup des Variables d'Environnement
 
 Sauvegardez votre `.env` local en sécurité:
 ```bash
@@ -118,7 +118,7 @@ Sauvegardez votre `.env` local en sécurité:
 
 ---
 
-## 📋 Checklist Finale
+## Checklist Finale
 
 - [ ] MongoDB Atlas configuré et accessible
 - [ ] Repository GitHub créé et pushé
@@ -131,7 +131,7 @@ Sauvegardez votre `.env` local en sécurité:
 
 ---
 
-## 📞 Support Render
+## Support Render
 
 - [Documentation Render](https://render.com/docs)
 - [Status Page](https://status.render.com)
