@@ -6,7 +6,8 @@
     "start": "node dist/main.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "build": "npm ci && tsc -p tsconfig.build.json",
-    "lint": "eslint --ext .ts src"
+    "lint": "eslint --ext .ts src",
+    "test": "echo \"No tests configured. Run unit tests with your preferred runner.\" && exit 0"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
