@@ -7,7 +7,7 @@
     "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "build": "npm ci && tsc -p tsconfig.build.json",
     "lint": "eslint --ext .ts src",
-    "test": "echo \"No tests configured. Run unit tests with your preferred runner.\" && exit 0"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -39,10 +39,13 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.17",
+    "@types/jest": "^30.0.0",
     "@types/multer": "^1.4.7",
     "@types/node": "^18.0.0",
     "@types/nodemailer": "^7.0.4",
     "eslint": "^8.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.12",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.0.0"
   }
