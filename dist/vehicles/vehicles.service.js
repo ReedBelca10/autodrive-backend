@@ -90,10 +90,6 @@ let VehiclesService = class VehiclesService {
             .exec();
         if (vehicle) {
             vehicle.mediaUrls = this.normalizeMediaUrls(vehicle.mediaUrls || []);
-            if (vehicle.agencyId && typeof vehicle.agencyId === 'object') {
-                vehicle.agency = vehicle.agencyId;
-                delete vehicle.agencyId;
-            }
         }
         return vehicle;
     }

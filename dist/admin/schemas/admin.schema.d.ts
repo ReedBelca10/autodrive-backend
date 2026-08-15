@@ -6,9 +6,9 @@ export declare const AdminSchema: Schema<any, import("mongoose").Model<any, any,
     updatedAt: NativeDate;
 } & {
     email: string;
-    isActive: boolean;
     password: string;
     role: string;
+    isActive: boolean;
     firstName?: string;
     lastName?: string;
 }, import("mongoose").Document<unknown, {}, import("mongoose").FlatRecord<{
@@ -16,9 +16,9 @@ export declare const AdminSchema: Schema<any, import("mongoose").Model<any, any,
     updatedAt: NativeDate;
 } & {
     email: string;
-    isActive: boolean;
     password: string;
     role: string;
+    isActive: boolean;
     firstName?: string;
     lastName?: string;
 }>> & import("mongoose").FlatRecord<{
@@ -26,9 +26,9 @@ export declare const AdminSchema: Schema<any, import("mongoose").Model<any, any,
     updatedAt: NativeDate;
 } & {
     email: string;
-    isActive: boolean;
     password: string;
     role: string;
+    isActive: boolean;
     firstName?: string;
     lastName?: string;
 }> & {

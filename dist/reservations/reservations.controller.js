@@ -39,6 +39,41 @@ let ReservationsController = class ReservationsController {
             throw new common_1.BadRequestException('Utilisateur non trouvé');
         return await this.reservationsService.findByUserId(userId);
     }
+    async handleFedapayRedirect(res) {
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Paiement AutoDrive</title>
+          <style>
+            body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f9fafb; }
+            .card { background: white; padding: 2rem; border-radius: 12px; shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); text-align: center; }
+            .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="loader"></div>
+            <p>Paiement validé ! Fermeture de la fenêtre...</p>
+            <script>
+              setTimeout(function() {
+                if (window.opener || window.history.length === 1) {
+                  window.close();
+                } else {
+                  window.location.href = "${frontendUrl}/profile/reservations";
+                }
+              }, 1500);
+            </script>
+          </div>
+        </body>
+      </html>
+    `);
+    }
+    async handleFedapayCallback(payload) {
+        return await this.reservationsService.handleFedapayCallback(payload);
+    }
     async findById(id) {
         return await this.reservationsService.findById(id);
     }
@@ -106,9 +141,6 @@ let ReservationsController = class ReservationsController {
             throw new common_1.BadRequestException('Transaction ID manquant');
         return await this.reservationsService.verifyFedapayPayment(id, userId, body.transactionId);
     }
-    async handleFedapayCallback(payload) {
-        return await this.reservationsService.handleFedapayCallback(payload);
-    }
     async getFedapayPaymentStatus(id, req) {
         const user = req.user;
         const userId = (user === null || user === void 0 ? void 0 : user.userId) || (user === null || user === void 0 ? void 0 : user.sub) || (user === null || user === void 0 ? void 0 : user.id);
@@ -134,6 +166,20 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], ReservationsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('fedapay-callback'),
+    __param(0, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ReservationsController.prototype, "handleFedapayRedirect", null);
+__decorate([
+    (0, common_1.Post)('fedapay-callback'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ReservationsController.prototype, "handleFedapayCallback", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -216,13 +262,6 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], ReservationsController.prototype, "confirmFedapayPayment", null);
-__decorate([
-    (0, common_1.Post)('fedapay-callback'),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], ReservationsController.prototype, "handleFedapayCallback", null);
 __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
     (0, common_1.Get)(':id/fedapay-status'),

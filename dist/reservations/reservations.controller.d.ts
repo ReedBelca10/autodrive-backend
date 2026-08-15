@@ -1,5 +1,5 @@
 import { ReservationsService } from './reservations.service';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 export declare class ReservationsController {
     private reservationsService;
     constructor(reservationsService: ReservationsService);
@@ -47,6 +47,11 @@ export declare class ReservationsController {
         insuranceOption: any;
         createdAt: any;
     }[]>;
+    handleFedapayRedirect(res: Response): Promise<void>;
+    handleFedapayCallback(payload: any): Promise<{
+        success: boolean;
+        reservation: any;
+    }>;
     findById(id: string): Promise<any>;
     create(reservationData: any, req: Request): Promise<any>;
     cancelReservation(id: string, req: Request): Promise<any>;
@@ -73,10 +78,6 @@ export declare class ReservationsController {
     confirmFedapayPayment(id: string, body: {
         transactionId?: string;
     }, req: Request): Promise<{
-        success: boolean;
-        reservation: any;
-    }>;
-    handleFedapayCallback(payload: any): Promise<{
         success: boolean;
         reservation: any;
     }>;

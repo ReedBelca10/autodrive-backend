@@ -45,7 +45,32 @@ export declare class AuthService {
         email: string;
         password: string;
     }): Promise<{
-        user: any;
+        user: {
+            email: string;
+            fullName: string;
+            phone: string;
+            address: string;
+            role: string;
+            avatarPath: string;
+            avatarUrl: string;
+            isActive: boolean;
+            refreshToken?: string;
+            favoriteVehicles: import("mongoose").Schema.Types.ObjectId[];
+            createdAt?: Date;
+            updatedAt?: Date;
+            _id: any;
+            __v?: any;
+            $locals: Record<string, unknown>;
+            $op: "save" | "validate" | "remove" | null;
+            $where: Record<string, unknown>;
+            baseModelName?: string;
+            collection: import("mongoose").Collection;
+            db: import("mongoose").Connection;
+            errors?: import("mongoose").Error.ValidationError;
+            id?: any;
+            isNew: boolean;
+            schema: import("mongoose").Schema;
+        };
         access_token: string;
         refresh_token: string;
     }>;

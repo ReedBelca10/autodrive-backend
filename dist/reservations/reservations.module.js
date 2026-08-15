@@ -15,6 +15,7 @@ const reservation_schema_1 = require("./schemas/reservation.schema");
 const vehicle_schema_1 = require("../vehicles/schemas/vehicle.schema");
 const agency_schema_1 = require("../agencies/schemas/agency.schema");
 const payments_module_1 = require("../payments/payments.module");
+const notifications_module_1 = require("../notifications/notifications.module");
 let ReservationsModule = class ReservationsModule {
 };
 exports.ReservationsModule = ReservationsModule;
@@ -27,6 +28,7 @@ exports.ReservationsModule = ReservationsModule = __decorate([
                 { name: 'Agency', schema: agency_schema_1.AgencySchema },
             ]),
             payments_module_1.PaymentsModule,
+            notifications_module_1.NotificationsModule,
         ],
         providers: [reservations_service_1.ReservationsService],
         controllers: [reservations_controller_1.ReservationsController],

@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import { AppModule } from './app.module';
-import * as cookieParser from 'cookie-parser';
+import cookieParser = require('cookie-parser');
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
@@ -13,7 +13,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   
   // Utilise le parser de cookies pour accéder aux cookies des requêtes
-  app.use(cookieParser());
+  app.use((cookieParser as any)());
   
   // Active CORS pour permettre au frontend d'envoyer les identifiants (cookies)
   app.enableCors({

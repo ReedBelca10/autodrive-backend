@@ -1,11 +1,13 @@
 import { Model } from 'mongoose';
 import { FedapayService } from '../payments/fedapay.service';
+import { NotificationsService } from '../notifications/notifications.service';
 export declare class ReservationsService {
     private reservationModel;
     private vehicleModel;
     private agencyModel;
     private fedapayService;
-    constructor(reservationModel: Model<any>, vehicleModel: Model<any>, agencyModel: Model<any>, fedapayService: FedapayService);
+    private notificationsService;
+    constructor(reservationModel: Model<any>, vehicleModel: Model<any>, agencyModel: Model<any>, fedapayService: FedapayService, notificationsService: NotificationsService);
     findAll(): Promise<Omit<any, never>[]>;
     findAllWithDetails(): Promise<{
         _id: any;
@@ -105,4 +107,5 @@ export declare class ReservationsService {
         paymentStatus: any;
         reservationStatus: any;
     }>;
+    private sendConfirmationNotification;
 }

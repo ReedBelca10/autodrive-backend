@@ -11,22 +11,29 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReservationsService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
-const stripe_1 = require("stripe");
+const stripe_1 = __importDefault(require("stripe"));
 const fedapay_service_1 = require("../payments/fedapay.service");
-const stripe = new stripe_1.default(process.env.STRIPE_SECRET_KEY || '', {
-    apiVersion: '2025-12-15.clover',
-});
+const notifications_service_1 = require("../notifications/notifications.service");
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? new stripe_1.default(process.env.STRIPE_SECRET_KEY, {
+        apiVersion: '2025-12-15.clover',
+    })
+    : null;
 let ReservationsService = class ReservationsService {
-    constructor(reservationModel, vehicleModel, agencyModel, fedapayService) {
+    constructor(reservationModel, vehicleModel, agencyModel, fedapayService, notificationsService) {
         this.reservationModel = reservationModel;
         this.vehicleModel = vehicleModel;
         this.agencyModel = agencyModel;
         this.fedapayService = fedapayService;
+        this.notificationsService = notificationsService;
     }
     async findAll() {
         return await this.reservationModel
@@ -164,6 +171,7 @@ let ReservationsService = class ReservationsService {
         return reservation;
     }
     async create(reservationData) {
+        var _a;
         const startDate = new Date(reservationData.startDate);
         const returnDate = new Date(reservationData.returnDate);
         if (startDate >= returnDate) {
@@ -229,10 +237,34 @@ let ReservationsService = class ReservationsService {
         const totalPrice = basePrice;
         const reservation = new this.reservationModel({
             ...reservationData,
+            userId: userIdObj,
             totalPrice,
             status: 'pending'
         });
-        return await reservation.save();
+        const savedReservation = await reservation.save();
+        try {
+            const fullVehicle = await this.vehicleModel.findById(reservation.vehicleId).populate('agencyId').exec();
+            const managerId = (_a = fullVehicle === null || fullVehicle === void 0 ? void 0 : fullVehicle.agencyId) === null || _a === void 0 ? void 0 : _a.managerId;
+            if (managerId) {
+                await this.notificationsService.create({
+                    recipientId: managerId.toString(),
+                    title: 'Nouvelle réservation reçue',
+                    content: `Une nouvelle réservation a été effectuée pour le véhicule ${fullVehicle.name}.`,
+                    type: 'reservation_new',
+                    reservationId: savedReservation._id.toString(),
+                });
+            }
+            await this.notificationsService.notifyAdmins({
+                title: 'Nouvelle réservation (Admin)',
+                content: `Une nouvelle réservation (#${savedReservation._id}) a été créée par un utilisateur.`,
+                type: 'reservation_new',
+                reservationId: savedReservation._id.toString(),
+            });
+        }
+        catch (notifyErr) {
+            console.error('Erreur lors de l\'envoi des notifications de création:', notifyErr);
+        }
+        return savedReservation;
     }
     async confirmReservation(id, userId) {
         const reservation = await this.reservationModel.findById(id).populate('vehicleId').exec();
@@ -336,6 +368,9 @@ let ReservationsService = class ReservationsService {
             };
         }
         else {
+            if (!stripe) {
+                throw new common_1.BadRequestException('Stripe n\'est pas configuré. Ajoutez STRIPE_SECRET_KEY dans le fichier .env pour activer les paiements.');
+            }
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: reservation.totalPrice * 100,
                 currency: 'xof',
@@ -359,12 +394,16 @@ let ReservationsService = class ReservationsService {
             throw new common_1.NotFoundException('Réservation non trouvée');
         if (reservation.userId.toString() !== userId)
             throw new common_1.BadRequestException('Non autorisé');
+        if (!stripe) {
+            throw new common_1.BadRequestException('Stripe n\'est pas configuré. Ajoutez STRIPE_SECRET_KEY dans le fichier .env pour valider les paiements.');
+        }
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
         if (paymentIntent.status === 'succeeded') {
             reservation.paymentStatus = 'paid';
             reservation.status = 'confirmed';
             await this.vehicleModel.findByIdAndUpdate(reservation.vehicleId, { status: 'reserved' }, { new: true }).exec();
             await reservation.save();
+            await this.sendConfirmationNotification(reservation);
             return { success: true, reservation };
         }
         else {
@@ -383,6 +422,7 @@ let ReservationsService = class ReservationsService {
             reservation.status = 'confirmed';
             await this.vehicleModel.findByIdAndUpdate(reservation.vehicleId, { status: 'reserved' }, { new: true }).exec();
             await reservation.save();
+            await this.sendConfirmationNotification(reservation);
             return { success: true, reservation };
         }
         else {
@@ -413,6 +453,9 @@ let ReservationsService = class ReservationsService {
                 reservation.status = 'cancelled';
             }
             await reservation.save();
+            if (status === 'approved') {
+                await this.sendConfirmationNotification(reservation);
+            }
             return { success: true, reservation };
         }
         catch (error) {
@@ -435,6 +478,7 @@ let ReservationsService = class ReservationsService {
                 reservation.status = 'confirmed';
                 await this.vehicleModel.findByIdAndUpdate(reservation.vehicleId, { status: 'reserved' }, { new: true }).exec();
                 await reservation.save();
+                await this.sendConfirmationNotification(reservation);
             }
             return {
                 reservationId: id,
@@ -448,6 +492,32 @@ let ReservationsService = class ReservationsService {
             throw new common_1.BadRequestException(`Erreur lors de la vérification du statut: ${error.message}`);
         }
     }
+    async sendConfirmationNotification(reservation) {
+        try {
+            const fullReservation = await this.reservationModel
+                .findById(reservation._id)
+                .populate({
+                path: 'vehicleId',
+                populate: { path: 'agencyId' }
+            })
+                .exec();
+            if (!fullReservation || !fullReservation.vehicleId || !fullReservation.vehicleId.agencyId)
+                return;
+            const vehicle = fullReservation.vehicleId;
+            const agency = vehicle.agencyId;
+            const mapsLink = `https://www.google.com/maps?q=${agency.latitude},${agency.longitude}`;
+            await this.notificationsService.create({
+                recipientId: reservation.userId.toString(),
+                title: 'Réservation confirmée ✅',
+                content: `Votre réservation pour le véhicule ${vehicle.name} est confirmée. Vous pouvez récupérer le véhicule à l'agence ${agency.name} (${agency.city}). Localisation: ${mapsLink}`,
+                type: 'reservation_confirmed',
+                reservationId: reservation._id.toString(),
+            });
+        }
+        catch (err) {
+            console.error('Erreur lors de l\'envoi de la notification de confirmation:', err);
+        }
+    }
 };
 exports.ReservationsService = ReservationsService;
 exports.ReservationsService = ReservationsService = __decorate([
@@ -458,5 +528,6 @@ exports.ReservationsService = ReservationsService = __decorate([
     __metadata("design:paramtypes", [mongoose_2.Model,
         mongoose_2.Model,
         mongoose_2.Model,
-        fedapay_service_1.FedapayService])
+        fedapay_service_1.FedapayService,
+        notifications_service_1.NotificationsService])
 ], ReservationsService);

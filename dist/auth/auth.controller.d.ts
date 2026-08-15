@@ -21,7 +21,9 @@ export declare class AuthController {
     googleCallback(req: Request, res: Response): Promise<void>;
     facebookCallback(req: Request, res: Response): Promise<void>;
     twitterCallback(req: Request, res: Response): Promise<void>;
-    register(dto: RegisterDto, res: Response): Promise<any>;
+    register(dto: RegisterDto): Promise<{
+        message: string;
+    }>;
     login(dto: LoginDto, res: Response): Promise<{
         message: string;
     }>;
