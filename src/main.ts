@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import { AppModule } from './app.module';
 import cookieParser = require('cookie-parser');
+import helmet from 'helmet';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
@@ -13,6 +14,12 @@ async function bootstrap() {
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+
+  // Active les hooks de fermeture pour Render (graceful shutdown)
+  app.enableShutdownHooks();
+
+  // Ajoute Helmet pour sécuriser les en-têtes HTTP
+  app.use(helmet());
 
   // Configure les pipes de validation globaux
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));

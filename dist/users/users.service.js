@@ -62,10 +62,9 @@ let UsersService = class UsersService {
         const existing = await this.userModel.findOne({ email: createUserDto.email }).exec();
         if (existing)
             throw new common_1.ConflictException('Email déjà utilisé');
-        const hashed = await bcrypt.hash(createUserDto.password, 10);
         const created = new this.userModel({
             ...createUserDto,
-            password: hashed,
+            password: createUserDto.password,
             role: createUserDto.role || 'client'
         });
         return (await created.save()).toObject();

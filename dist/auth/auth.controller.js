@@ -55,6 +55,17 @@ const supabase_client_1 = require("../utils/supabase.client");
 const jwt_1 = require("@nestjs/jwt");
 const crypto = __importStar(require("crypto"));
 const users_service_1 = require("../users/users.service");
+const getCookieOptions = (maxAge) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const sameSite = isProduction ? 'none' : 'lax';
+    return {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite,
+        maxAge,
+        path: '/',
+    };
+};
 class RegisterDto {
 }
 __decorate([
@@ -141,20 +152,8 @@ let AuthController = AuthController_1 = class AuthController {
             const avatarUrl = profile.picture;
             const user = await this.usersService.findOrCreateFromSocial({ email, fullName, avatarUrl });
             const tokens = await this.authService.login(user);
-            res.cookie('autodrive_token', tokens.access_token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 1000 * 60 * 60,
-                path: '/',
-            });
-            res.cookie('autodrive_refresh', tokens.refresh_token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 1000 * 60 * 60 * 24 * 7,
-                path: '/',
-            });
+            res.cookie('autodrive_token', tokens.access_token, getCookieOptions(1000 * 60 * 60));
+            res.cookie('autodrive_refresh', tokens.refresh_token, getCookieOptions(1000 * 60 * 60 * 24 * 7));
             return res.redirect(frontend + '/');
         }
         catch (e) {
@@ -179,20 +178,8 @@ let AuthController = AuthController_1 = class AuthController {
             const avatarUrl = (_b = (_a = profile.picture) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.url;
             const user = await this.usersService.findOrCreateFromSocial({ email, fullName, avatarUrl });
             const tokens = await this.authService.login(user);
-            res.cookie('autodrive_token', tokens.access_token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 1000 * 60 * 60,
-                path: '/',
-            });
-            res.cookie('autodrive_refresh', tokens.refresh_token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 1000 * 60 * 60 * 24 * 7,
-                path: '/',
-            });
+            res.cookie('autodrive_token', tokens.access_token, getCookieOptions(1000 * 60 * 60));
+            res.cookie('autodrive_refresh', tokens.refresh_token, getCookieOptions(1000 * 60 * 60 * 24 * 7));
             return res.redirect(frontend + '/');
         }
         catch (e) {
@@ -233,20 +220,8 @@ let AuthController = AuthController_1 = class AuthController {
             const avatarUrl = userData.profile_image_url;
             const user = await this.usersService.findOrCreateFromSocial({ email, fullName, avatarUrl });
             const tokens = await this.authService.login(user);
-            res.cookie('autodrive_token', tokens.access_token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 1000 * 60 * 60,
-                path: '/',
-            });
-            res.cookie('autodrive_refresh', tokens.refresh_token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 1000 * 60 * 60 * 24 * 7,
-                path: '/',
-            });
+            res.cookie('autodrive_token', tokens.access_token, getCookieOptions(1000 * 60 * 60));
+            res.cookie('autodrive_refresh', tokens.refresh_token, getCookieOptions(1000 * 60 * 60 * 24 * 7));
             return res.redirect(frontend + '/');
         }
         catch (e) {
@@ -270,20 +245,8 @@ let AuthController = AuthController_1 = class AuthController {
         const tokenObj = await this.authService.login(user);
         const access = tokenObj.access_token;
         const refresh = tokenObj.refresh_token;
-        res.cookie('autodrive_token', access, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 1000 * 60 * 60,
-            path: '/',
-        });
-        res.cookie('autodrive_refresh', refresh, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 1000 * 60 * 60 * 24 * 7,
-            path: '/',
-        });
+        res.cookie('autodrive_token', access, getCookieOptions(1000 * 60 * 60));
+        res.cookie('autodrive_refresh', refresh, getCookieOptions(1000 * 60 * 60 * 24 * 7));
         return { message: 'ok' };
     }
     async profile(req) {
@@ -352,20 +315,8 @@ let AuthController = AuthController_1 = class AuthController {
         if (!refresh)
             throw new common_1.BadRequestException('Refresh token missing');
         const tokens = await this.authService.refreshTokensUsing(refresh);
-        res.cookie('autodrive_token', tokens.access_token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 1000 * 60 * 60,
-            path: '/',
-        });
-        res.cookie('autodrive_refresh', tokens.refresh_token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 1000 * 60 * 60 * 24 * 7,
-            path: '/',
-        });
+        res.cookie('autodrive_token', tokens.access_token, getCookieOptions(1000 * 60 * 60));
+        res.cookie('autodrive_refresh', tokens.refresh_token, getCookieOptions(1000 * 60 * 60 * 24 * 7));
         return { message: 'ok' };
     }
     async forgotPassword(body) {
