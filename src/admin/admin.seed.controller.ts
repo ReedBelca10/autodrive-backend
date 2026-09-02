@@ -1,7 +1,6 @@
 import { Controller, Post, Body, Headers, BadRequestException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import * as bcrypt from 'bcryptjs';
 
 @Controller('admin')
 export class AdminSeedController {
@@ -22,18 +21,16 @@ export class AdminSeedController {
       const { email, password, fullName } = body;
       if (!email || !password) throw new BadRequestException('Email et mot de passe requis');
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-
       const existing = await this.userModel.findOne({ email });
       if (existing) {
         existing.role = 'admin';
-        existing.password = hashedPassword;
+        existing.password = password;
         if (fullName) existing.fullName = fullName;
         await existing.save();
         return { message: 'Utilisateur promu administrateur' };
       }
 
-      await this.userModel.create({ email, password: hashedPassword, fullName: fullName || 'Admin', role: 'admin' });
+      await this.userModel.create({ email, password, fullName: fullName || 'Admin', role: 'admin' });
       return { message: 'Administrateur créé avec succès' };
     } catch (err) {
       console.error('Erreur AdminSeedController:', err);
