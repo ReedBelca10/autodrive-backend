@@ -1,19 +1,21 @@
 import { Body, Controller, Post, BadRequestException, Res, Req, Get, UseGuards, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
-import { Response, Request } from 'express';
+import { Response, Request, CookieOptions } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { supabase } from '../utils/supabase.client';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
 
-const getCookieOptions = (maxAge: number) => {
+const getCookieOptions = (maxAge: number): CookieOptions => {
   const isProduction = process.env.NODE_ENV === 'production';
+  const sameSite: 'none' | 'lax' = isProduction ? 'none' : 'lax';
+
   return {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax',
+    sameSite,
     maxAge,
     path: '/',
   };
