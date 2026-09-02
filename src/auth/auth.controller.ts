@@ -8,6 +8,17 @@ import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
 
+const getCookieOptions = (maxAge: number) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: (isProduction ? 'none' : 'lax') as const,
+    maxAge,
+    path: '/',
+  };
+};
+
 class RegisterDto {
   @IsNotEmpty()
   fullName: string;
@@ -101,20 +112,8 @@ export class AuthController {
       const avatarUrl = profile.picture;
       const user = await this.usersService.findOrCreateFromSocial({ email, fullName, avatarUrl });
       const tokens = await this.authService.login(user);
-      res.cookie('autodrive_token', tokens.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 1000 * 60 * 60,
-        path: '/',
-      });
-      res.cookie('autodrive_refresh', tokens.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 1000 * 60 * 60 * 24 * 7,
-        path: '/',
-      });
+      res.cookie('autodrive_token', tokens.access_token, getCookieOptions(1000 * 60 * 60));
+      res.cookie('autodrive_refresh', tokens.refresh_token, getCookieOptions(1000 * 60 * 60 * 24 * 7));
       // rediriger vers le frontend
       return res.redirect(frontend + '/');
     } catch (e) {
@@ -140,20 +139,8 @@ export class AuthController {
       const avatarUrl = profile.picture?.data?.url;
       const user = await this.usersService.findOrCreateFromSocial({ email, fullName, avatarUrl });
       const tokens = await this.authService.login(user);
-      res.cookie('autodrive_token', tokens.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 1000 * 60 * 60,
-        path: '/',
-      });
-      res.cookie('autodrive_refresh', tokens.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 1000 * 60 * 60 * 24 * 7,
-        path: '/',
-      });
+      res.cookie('autodrive_token', tokens.access_token, getCookieOptions(1000 * 60 * 60));
+      res.cookie('autodrive_refresh', tokens.refresh_token, getCookieOptions(1000 * 60 * 60 * 24 * 7));
       return res.redirect(frontend + '/');
     } catch (e) {
       console.warn('Erreur de rappel Facebook OAuth', e);
@@ -198,20 +185,8 @@ export class AuthController {
       const avatarUrl = userData.profile_image_url;
       const user = await this.usersService.findOrCreateFromSocial({ email, fullName, avatarUrl });
       const tokens = await this.authService.login(user);
-      res.cookie('autodrive_token', tokens.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 1000 * 60 * 60,
-        path: '/',
-      });
-      res.cookie('autodrive_refresh', tokens.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 1000 * 60 * 60 * 24 * 7,
-        path: '/',
-      });
+      res.cookie('autodrive_token', tokens.access_token, getCookieOptions(1000 * 60 * 60));
+      res.cookie('autodrive_refresh', tokens.refresh_token, getCookieOptions(1000 * 60 * 60 * 24 * 7));
       return res.redirect(frontend + '/');
     } catch (e) {
       console.warn('Twitter OAuth callback error', e);
@@ -239,20 +214,8 @@ export class AuthController {
     const access = tokenObj.access_token;
     const refresh = tokenObj.refresh_token;
     // Set HttpOnly cookies for access and refresh
-    res.cookie('autodrive_token', access, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60, // 1 hour
-      path: '/',
-    });
-    res.cookie('autodrive_refresh', refresh, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-    });
+    res.cookie('autodrive_token', access, getCookieOptions(1000 * 60 * 60));
+    res.cookie('autodrive_refresh', refresh, getCookieOptions(1000 * 60 * 60 * 24 * 7));
     return { message: 'ok' };
   }
 
@@ -333,20 +296,8 @@ export class AuthController {
     if (!refresh) throw new BadRequestException('Refresh token missing');
     // Use authService to validate refresh and generate new tokens
     const tokens = await this.authService.refreshTokensUsing(refresh);
-    res.cookie('autodrive_token', tokens.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60,
-      path: '/',
-    });
-    res.cookie('autodrive_refresh', tokens.refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-      path: '/',
-    });
+    res.cookie('autodrive_token', tokens.access_token, getCookieOptions(1000 * 60 * 60));
+    res.cookie('autodrive_refresh', tokens.refresh_token, getCookieOptions(1000 * 60 * 60 * 24 * 7));
     return { message: 'ok' };
   }
 
