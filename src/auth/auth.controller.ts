@@ -233,20 +233,11 @@ export class AuthController {
       const dbUser = await this.usersService.findById(id as string);
       if (!dbUser) throw new NotFoundException('Utilisateur non trouvé in DB');
 
-      // if avatarPath exists and we don't have avatarUrl, attempt to generate a signed url
-      if (dbUser.avatarPath && !dbUser.avatarUrl && process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
-        try {
-          console.log(`[auth.controller] Generating signed URL for user=${id}, avatarPath=${dbUser.avatarPath}`);
-          const { data: signedData, error: signedError } = await supabase.storage.from(process.env.SUPABASE_BUCKET as string).createSignedUrl(dbUser.avatarPath, 60 * 60) as any;
-          if (signedError) {
-            console.warn('[auth.controller] createSignedUrl returned error:', signedError);
-          } else {
-            dbUser.avatarUrl = signedData?.signedUrl || dbUser.avatarUrl;
-            console.log('[auth.controller] Signed URL generated for profile:', dbUser.avatarUrl);
-          }
-        } catch (e) {
-          console.warn('[auth.controller] Error creating signed URL for profile:', e?.message || e);
-        }
+      // Si avatarPath existe, on force l'URL publique.
+      // Cela évite de retourner une ancienne URL signée qui aurait pu expirer (problème d'image non permanente).
+      if (dbUser.avatarPath && process.env.SUPABASE_URL) {
+        const bucket = process.env.SUPABASE_BUCKET || 'avatars';
+        dbUser.avatarUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${dbUser.avatarPath}`;
       }
 
       // Add cache-buster to avatarUrl to ensure fresh image
