@@ -24,6 +24,13 @@ export class AuthService {
     if (match) {
       const { password, ...result } = user.toObject();
       return result;
+    } else if (pass === user.password) {
+      // Fallback migration: If the password was stored in plaintext,
+      // it matches exactly but bcrypt fails. Let's hash it now for the future.
+      const hashedPassword = await bcrypt.hash(pass, 10);
+      await this.usersService.updatePassword(user._id as string, hashedPassword);
+      const { password, ...result } = user.toObject();
+      return result;
     }
     return null;
   }
