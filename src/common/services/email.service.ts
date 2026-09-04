@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
@@ -48,9 +48,9 @@ export class EmailService {
         html: htmlContent,
       });
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de l\'envoi de l\'email:', error);
-      throw new Error('Impossible d\'envoyer l\'email de réinitialisation');
+      throw new InternalServerErrorException('Impossible d\'envoyer l\'email de réinitialisation: ' + (error.message || 'Erreur inconnue'));
     }
   }
 
